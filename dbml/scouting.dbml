@@ -1,0 +1,111 @@
+// RLS rules:
+// - Allow any user to SELECT
+Table question_types {
+  id text [pk]
+}
+
+// RLS rules:
+// - Allow any user to SELECT
+Table categories {
+  id text [pk]
+  has_match bool [not null]
+}
+
+// RLS rules:
+// - Allow any user to SELECT
+Table sections {
+  season smallint [not null]
+  category text [not null]
+  key text [not null]
+  index smallint [not null]
+  heading text [not null]
+
+  indexes {
+    (season, category, key) [pk]
+    (season, category, index) [unique]
+  }
+}
+Ref: sections.category > categories.id [delete: restrict]
+
+
+// RLS rules:
+// - Allow any user to SELECT
+Table questions {
+  id uuid [pk, default: `gen_random_uuid()`]
+  season smallint [not null]
+  category text [not null]
+  section_key text [not null]
+  key text [not null]
+  index smallint [not null]
+  prompt text [not null]
+  type text [not null]
+  config jsonb [not null, default: '{}']
+
+  indexes {
+    (season, category, key) [unique]
+    (season, category, section_key, index) [unique]
+    (season, category)
+  }
+}
+Ref: questions.category > categories.id [delete: restrict]
+Ref: questions.(season, category, section_key) > sections.(season, category, key)
+Ref: questions.type > question_types.id [delete: restrict]
+
+// RLS rules:
+// - Allow any user to SELECT
+// - If category = 'match', allow 'scout_match' role to INSERT
+// - If category = 'pit', allow 'scout_pit' role to INSERT
+// - If category = 'drive_team', allow 'scout_drive_team' role to INSERT
+// - Allow role 'review_submissions' to DELETE? Maybe?
+// Checks:
+// - if category requires match_key, ensure match_key != null
+// - on INSERT, ensure scouted_by and scouted_for != null
+Table submissions {
+  id uuid [pk, default: `gen_random_uuid()`]
+  category text [not null]
+  event_key citext [not null]
+  match_key citext
+  season smallint [not null]
+  team_key citext [not null]
+  scouted_by uuid [default: `auth.uid()`]
+  scouted_for smallint
+  created_at timestamptz [not null, default: `now()`]
+}
+Ref: submissions.category > categories.id [delete: restrict]
+Ref: submissions.event_key > frc_events.key [delete: restrict]
+Ref: submissions.match_key > frc_matches.key [delete: restrict]
+Ref: submissions.season > frc_seasons.year [delete: restrict]
+Ref: submissions.team_key > frc_teams.key [delete: restrict]
+Ref: submissions.scouted_by > users.id [delete: set null]
+Ref: submissions.scouted_for > teams.number [delete: set null]
+
+// RLS rules:
+// - Allow any user to SELECT
+// - Allow user to INSERT if they created the submission
+// - Allow role 'review_submissions' to DELETE? Maybe?
+Table submission_data {
+  submission_id uuid [not null]
+  question_id uuid [not null]
+  value text [not null]
+
+  indexes {
+    (submission_id, question_id) [pk]
+  }
+}
+Ref: submission_data.submission_id > submissions.id [delete: cascade]
+Ref: submission_data.question_id > questions.id [delete: restrict]
+
+// RLS rules:
+// - Allow any user to SELECT
+// - Allow role 'review_submissions' to INSERT or DELETE flags for their team
+Table flagged {
+  submission_id uuid [pk]
+  user_id uuid [not null, default: `auth.uid()`]
+  created_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    user_id
+  }
+}
+Ref: flagged.submission_id - submissions.id [delete: cascade]
+Ref: flagged.user_id > users.id [delete: cascade]

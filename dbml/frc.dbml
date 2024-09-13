@@ -1,0 +1,147 @@
+// RLS: all of these should only allow all users to SELECT
+
+Table frc_seasons {
+  year smallint [pk]
+  name text [not null]
+  team_count smallint [not null]
+}
+
+Table frc_districts {
+  key citext [pk]
+  season smallint [not null]
+  code citext [not null]
+  name text [not null]
+
+  indexes {
+    (season, code) [unique]
+  }
+}
+Ref: frc_districts.season > frc_seasons.year [delete: cascade]
+
+Enum frc_event_type {
+  // null // None
+  off_season // OffSeason, OffSeasonWithAzureSync
+  regional // Regional
+  district // DistrictEvent
+  district_championship // DistrictChampionship, DistrictChampionshipWithLevels, DistrictChampionshipDivision
+  championship // ChampionshipSubdivision, ChampionshipDivision, Championship
+}
+
+Table frc_events {
+  key citext [pk] // fixme: generate stored
+  season smallint [not null]
+  code citext [not null]
+  type frc_event_type
+  name text [not null]
+  venue text [not null]
+  address text [not null]
+  city text [not null]
+  province text [not null]
+  country text [not null]
+  start_date date [not null]
+  end_date date [not null]
+  website text
+
+  indexes {
+    (season, code) [unique]
+  }
+}
+Ref: frc_events.season > frc_seasons.year
+
+Table frc_district_events {
+  event_key citext [pk]
+  district_key citext [not null]
+}
+Ref: frc_district_events.event_key - frc_events.key [delete: cascade]
+Ref: frc_district_events.district_key > frc_districts.key [delete: cascade]
+
+Table frc_teams {
+  key citext [pk]
+  season smallint [not null]
+  number smallint [not null]
+  name text [not null]
+  rookie_season smallint [not null]
+  schools text[] [not null]
+  sponsors text[] [not null]
+  city text [not null]
+  province text [not null]
+  country text [not null]
+  website text
+
+  indexes {
+    (season, number) [unique]
+    number
+  }
+}
+Ref: frc_teams.season > frc_seasons.year [delete: cascade]
+
+Table frc_district_teams {
+  team_key citext [pk]
+  district_key citext [not null]
+
+  indexes {
+    district_key
+  }
+}
+Ref: frc_district_teams.team_key - frc_teams.key [delete: cascade]
+Ref: frc_district_teams.district_key > frc_districts.key [delete: cascade]
+
+Table frc_event_teams {
+  event_key citext [not null]
+  team_key citext [not null]
+
+  indexes {
+    (event_key, team_key) [pk]
+  }
+}
+Ref: frc_event_teams.event_key > frc_events.key [delete: cascade]
+Ref: frc_event_teams.team_key > frc_teams.key [delete: cascade]
+
+Enum frc_match_level {
+  practice
+  qual
+  playoff
+}
+
+Table frc_matches {
+  key citext [pk] // fixme: generate stored
+  event_key citext [not null]
+  level frc_match_level [not null]
+  set smallint [not null]
+  number smallint [not null]
+  name text [not null]
+  scheduled_time timestamp [not null] // api returns local time
+
+  indexes {
+    (event_key, level, set, number) [unique]
+  }
+}
+Ref: frc_matches.event_key > frc_events.key [delete: cascade]
+
+Enum frc_alliance {
+  red
+  blue
+}
+
+Table frc_match_teams {
+  match_key citext [not null]
+  team_key smallint [not null]
+  alliance frc_alliance [not null]
+
+  indexes {
+    (match_key, team_key) [pk]
+  }
+}
+Ref: frc_match_teams.match_key > frc_matches.key [delete: cascade]
+Ref: frc_match_teams.team_key > frc_teams.key [delete: cascade]
+
+Table frc_match_results {
+  match_key citext [pk]
+  red_score smallint [not null]
+  blue_score smallint [not null]
+  red_breakdown jsonb [not null]
+  blue_breakdown jsonb [not null]
+  actual_time timestamp [not null]
+  video_url text
+}
+Ref: frc_match_results.match_key - frc_matches.key
