@@ -34,7 +34,7 @@ CREATE TABLE "teams" (
 );
 
 CREATE TABLE "users" (
-  "id" uuid PRIMARY KEY,
+  "id" uuid PRIMARY KEY DEFAULT (auth.uid()),
   "name" text NOT NULL,
   "created_at" timestamptz NOT NULL DEFAULT (now())
 );

@@ -17,7 +17,7 @@ Table teams {
 // - Allow users to INSERT or UPDATE themselves
 //   - disallow editing id, created_at
 Table users {
-  id uuid [pk]
+  id uuid [pk, default: `auth.uid()`]
   name text [not null]
   created_at timestamptz [not null, default: `now()`]
 }
