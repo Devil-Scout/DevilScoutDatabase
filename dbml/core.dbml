@@ -3,7 +3,7 @@
 // RLS Rules:
 // - Allow anyone to SELECT
 //   - For requesting to join teams
-// - Allow the 'manage_team' role to UPDATE or DELETE their team
+// - Allow the 'manage_team' role to UPDATE their team
 //   - disallow editing number, created_at
 Table teams {
   number smallint [pk]
@@ -17,7 +17,7 @@ Table teams {
 // - Allow users to INSERT or UPDATE themselves
 //   - disallow editing id, created_at
 Table users {
-  id uuid [pk, default: `auth.uid()`]
+  id uuid [pk]
   name text [not null]
   created_at timestamptz [not null, default: `now()`]
 }
@@ -32,7 +32,7 @@ Table users {
 Table team_users {
   user_id uuid [pk]
   team_num smallint [not null]
-  added_by uuid [default: `auth.uid()`]
+  added_by uuid [not null]
 
   indexes {
     team_num
@@ -50,6 +50,7 @@ Ref: team_users.added_by > users.id [delete: set null]
 Table team_requests {
   user_id uuid [pk, default: `auth.uid()`]
   team_num smallint [not null]
+  requested_at timestamptz [not null, default: `now()`]
 
   indexes {
     team_num
@@ -89,7 +90,7 @@ Ref: disabled_users.disabled_by > users.id [delete: cascade]
 // RLS rules:
 // - Allow any user to SELECT anything
 Table permission_types {
-  id text [pk]
+  id citext [pk]
   name text [not null]
   description text [not null]
 }
@@ -97,15 +98,15 @@ Table permission_types {
 // RLS rules:
 // - Allow users to SELECT their own permissions
 // - Allow users with 'manage_team' role to INSERT or DELETE their team's permissions
-Table user_permissions {
+Table permissions {
   user_id uuid [not null]
-  type text [not null]
+  type citext [not null]
   granted_by uuid [default: `auth.uid()`]
 
   indexes {
     (user_id, type) [pk]
   }
 }
-Ref: user_permissions.user_id > users.id [delete: cascade]
-Ref: user_permissions.type > permission_types.id [delete: cascade]
-Ref: user_permissions.granted_by > users.id [delete: set null]
+Ref: permissions.user_id > users.id [delete: cascade]
+Ref: permissions.type > permission_types.id [delete: cascade]
+Ref: permissions.granted_by > users.id [delete: set null]

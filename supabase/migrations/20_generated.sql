@@ -34,7 +34,7 @@ CREATE TABLE "teams" (
 );
 
 CREATE TABLE "users" (
-  "id" uuid PRIMARY KEY DEFAULT (auth.uid()),
+  "id" uuid PRIMARY KEY,
   "name" text NOT NULL,
   "created_at" timestamptz NOT NULL DEFAULT (now())
 );
@@ -42,12 +42,13 @@ CREATE TABLE "users" (
 CREATE TABLE "team_users" (
   "user_id" uuid PRIMARY KEY,
   "team_num" smallint NOT NULL,
-  "added_by" uuid DEFAULT (auth.uid())
+  "added_by" uuid NOT NULL
 );
 
 CREATE TABLE "team_requests" (
   "user_id" uuid PRIMARY KEY DEFAULT (auth.uid()),
-  "team_num" smallint NOT NULL
+  "team_num" smallint NOT NULL,
+  "requested_at" timestamptz NOT NULL DEFAULT (now())
 );
 
 CREATE TABLE "disabled_users" (
@@ -56,14 +57,14 @@ CREATE TABLE "disabled_users" (
 );
 
 CREATE TABLE "permission_types" (
-  "id" text PRIMARY KEY,
+  "id" citext PRIMARY KEY,
   "name" text NOT NULL,
   "description" text NOT NULL
 );
 
-CREATE TABLE "user_permissions" (
+CREATE TABLE "permissions" (
   "user_id" uuid NOT NULL,
-  "type" text NOT NULL,
+  "type" citext NOT NULL,
   "granted_by" uuid DEFAULT (auth.uid()),
   PRIMARY KEY ("user_id", "type")
 );
@@ -258,11 +259,11 @@ ALTER TABLE "disabled_users" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id
 
 ALTER TABLE "disabled_users" ADD FOREIGN KEY ("disabled_by") REFERENCES "users" ("id") ON DELETE CASCADE;
 
-ALTER TABLE "user_permissions" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE;
+ALTER TABLE "permissions" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE;
 
-ALTER TABLE "user_permissions" ADD FOREIGN KEY ("type") REFERENCES "permission_types" ("id") ON DELETE CASCADE;
+ALTER TABLE "permissions" ADD FOREIGN KEY ("type") REFERENCES "permission_types" ("id") ON DELETE CASCADE;
 
-ALTER TABLE "user_permissions" ADD FOREIGN KEY ("granted_by") REFERENCES "users" ("id") ON DELETE SET NULL;
+ALTER TABLE "permissions" ADD FOREIGN KEY ("granted_by") REFERENCES "users" ("id") ON DELETE SET NULL;
 
 ALTER TABLE "frc_districts" ADD FOREIGN KEY ("season") REFERENCES "frc_seasons" ("year") ON DELETE CASCADE;
 
