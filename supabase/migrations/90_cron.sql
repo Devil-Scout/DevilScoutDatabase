@@ -1,8 +1,3 @@
--- Init extension
-CREATE EXTENSION IF NOT EXISTS cron_pg WITH SCHEMA extensions;
-GRANT USAGE ON SCHEMA cron TO postgres;
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA cron TO postgres;
-
 -- Vacuum every night at 6am GMT (1am EST, 10pm PST)
 -- This is optimal for the majority of FRC competitions (North America and Europe)
 SELECT cron.schedule (
@@ -33,10 +28,9 @@ SELECT cron.schedule (
 --   - teams
 --   - awards
 --   - etc
--- Occurs every day at 1am, 5am, 9am, 1pm, 5pm, 9pm GMT
 SELECT cron.schedule (
   'frc-synchronize-season',
-  '0 1/4 * * *',
+  '0 */4 * * *',
   $$ $$
 );
 

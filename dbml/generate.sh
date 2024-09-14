@@ -30,6 +30,6 @@ for file in $(find "$ROOT_DIR/dbml" -name "*.patch"); do
 done
 
 # Write the result
-output="$ROOT_DIR/supabase/migrations/50_generated.sql"
-cat "$tmpsql" > "$output
+output="$ROOT_DIR/supabase/migrations/20_generated.sql"
+cat "$tmpsql" > "$output"
 echo "Results at $output"

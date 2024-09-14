@@ -38,7 +38,7 @@ Table team_users {
     team_num
   }
 }
-Ref: team_users.user_id - users.id [delete: cascade]
+Ref: team_users.user_id > users.id [delete: cascade]
 Ref: team_users.team_num > teams.number [delete: cascade]
 Ref: team_users.added_by > users.id [delete: set null]
 
@@ -55,7 +55,7 @@ Table team_requests {
     team_num
   }
 }
-Ref: team_requests.user_id - users.id [delete: cascade]
+Ref: team_requests.user_id > users.id [delete: cascade]
 Ref: team_requests.team_num > teams.number [delete: cascade]
 
 // RLS rules:
@@ -69,7 +69,7 @@ Table disabled_users {
   user_id uuid [pk]
   disabled_by uuid [not null, default: `auth.uid()`]
 }
-Ref: disabled_users.user_id - users.id [delete: cascade]
+Ref: disabled_users.user_id > users.id [delete: cascade]
 Ref: disabled_users.disabled_by > users.id [delete: cascade]
 
 // Users will be given one or more permissions, detailing their levels of access

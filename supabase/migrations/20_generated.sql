@@ -17,6 +17,11 @@ CREATE TYPE "frc_match_level" AS ENUM (
   'playoff'
 );
 
+CREATE OR REPLACE FUNCTION
+frc_match_level_2_text(frc_match_level) RETURNS TEXT
+AS $$ SELECT $1 $$
+STRICT IMMUTABLE LANGUAGE SQL;
+
 CREATE TYPE "frc_alliance" AS ENUM (
   'red',
   'blue'
@@ -103,7 +108,7 @@ CREATE TABLE "frc_district_events" (
 CREATE TABLE "frc_teams" (
   "key" citext PRIMARY KEY
     GENERATED ALWAYS AS
-      (season || "_" || number)
+      (season || '_' || number)
       STORED,
   "season" smallint NOT NULL,
   "number" smallint NOT NULL,
@@ -131,7 +136,7 @@ CREATE TABLE "frc_event_teams" (
 CREATE TABLE "frc_matches" (
   "key" citext PRIMARY KEY
     GENERATED ALWAYS AS
-      (event_key || "_" || level || "s" || set || "m" || number)
+      (event_key || '_' || frc_match_level_2_text(level) || 's' || set || 'm' || number)
       STORED,
   "event_key" citext NOT NULL,
   "level" frc_match_level NOT NULL,
@@ -143,7 +148,7 @@ CREATE TABLE "frc_matches" (
 
 CREATE TABLE "frc_match_teams" (
   "match_key" citext NOT NULL,
-  "team_key" smallint NOT NULL,
+  "team_key" citext NOT NULL,
   "alliance" frc_alliance NOT NULL,
   PRIMARY KEY ("match_key", "team_key")
 );
@@ -239,17 +244,17 @@ CREATE INDEX ON "questions" ("season", "category");
 
 CREATE INDEX ON "flagged" ("user_id");
 
-ALTER TABLE "users" ADD FOREIGN KEY ("id") REFERENCES "team_users" ("user_id") ON DELETE CASCADE;
+ALTER TABLE "team_users" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE;
 
 ALTER TABLE "team_users" ADD FOREIGN KEY ("team_num") REFERENCES "teams" ("number") ON DELETE CASCADE;
 
 ALTER TABLE "team_users" ADD FOREIGN KEY ("added_by") REFERENCES "users" ("id") ON DELETE SET NULL;
 
-ALTER TABLE "users" ADD FOREIGN KEY ("id") REFERENCES "team_requests" ("user_id") ON DELETE CASCADE;
+ALTER TABLE "team_requests" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE;
 
 ALTER TABLE "team_requests" ADD FOREIGN KEY ("team_num") REFERENCES "teams" ("number") ON DELETE CASCADE;
 
-ALTER TABLE "users" ADD FOREIGN KEY ("id") REFERENCES "disabled_users" ("user_id") ON DELETE CASCADE;
+ALTER TABLE "disabled_users" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE;
 
 ALTER TABLE "disabled_users" ADD FOREIGN KEY ("disabled_by") REFERENCES "users" ("id") ON DELETE CASCADE;
 
@@ -261,15 +266,15 @@ ALTER TABLE "user_permissions" ADD FOREIGN KEY ("granted_by") REFERENCES "users"
 
 ALTER TABLE "frc_districts" ADD FOREIGN KEY ("season") REFERENCES "frc_seasons" ("year") ON DELETE CASCADE;
 
-ALTER TABLE "frc_events" ADD FOREIGN KEY ("season") REFERENCES "frc_seasons" ("year");
+ALTER TABLE "frc_events" ADD FOREIGN KEY ("season") REFERENCES "frc_seasons" ("year") ON DELETE CASCADE;
 
-ALTER TABLE "frc_events" ADD FOREIGN KEY ("key") REFERENCES "frc_district_events" ("event_key") ON DELETE CASCADE;
+ALTER TABLE "frc_district_events" ADD FOREIGN KEY ("event_key") REFERENCES "frc_events" ("key") ON DELETE CASCADE;
 
 ALTER TABLE "frc_district_events" ADD FOREIGN KEY ("district_key") REFERENCES "frc_districts" ("key") ON DELETE CASCADE;
 
 ALTER TABLE "frc_teams" ADD FOREIGN KEY ("season") REFERENCES "frc_seasons" ("year") ON DELETE CASCADE;
 
-ALTER TABLE "frc_teams" ADD FOREIGN KEY ("key") REFERENCES "frc_district_teams" ("team_key") ON DELETE CASCADE;
+ALTER TABLE "frc_district_teams" ADD FOREIGN KEY ("team_key") REFERENCES "frc_teams" ("key") ON DELETE CASCADE;
 
 ALTER TABLE "frc_district_teams" ADD FOREIGN KEY ("district_key") REFERENCES "frc_districts" ("key") ON DELETE CASCADE;
 
@@ -283,7 +288,7 @@ ALTER TABLE "frc_match_teams" ADD FOREIGN KEY ("match_key") REFERENCES "frc_matc
 
 ALTER TABLE "frc_match_teams" ADD FOREIGN KEY ("team_key") REFERENCES "frc_teams" ("key") ON DELETE CASCADE;
 
-ALTER TABLE "frc_matches" ADD FOREIGN KEY ("key") REFERENCES "frc_match_results" ("match_key");
+ALTER TABLE "frc_match_results" ADD FOREIGN KEY ("match_key") REFERENCES "frc_matches" ("key");
 
 ALTER TABLE "sections" ADD FOREIGN KEY ("category") REFERENCES "categories" ("id") ON DELETE RESTRICT;
 
@@ -311,7 +316,7 @@ ALTER TABLE "submission_data" ADD FOREIGN KEY ("submission_id") REFERENCES "subm
 
 ALTER TABLE "submission_data" ADD FOREIGN KEY ("question_id") REFERENCES "questions" ("id") ON DELETE RESTRICT;
 
-ALTER TABLE "submissions" ADD FOREIGN KEY ("id") REFERENCES "flagged" ("submission_id") ON DELETE CASCADE;
+ALTER TABLE "flagged" ADD FOREIGN KEY ("submission_id") REFERENCES "submissions" ("id") ON DELETE CASCADE;
 
 ALTER TABLE "flagged" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE;
 

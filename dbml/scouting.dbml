@@ -107,5 +107,5 @@ Table flagged {
     user_id
   }
 }
-Ref: flagged.submission_id - submissions.id [delete: cascade]
+Ref: flagged.submission_id > submissions.id [delete: cascade]
 Ref: flagged.user_id > users.id [delete: cascade]
