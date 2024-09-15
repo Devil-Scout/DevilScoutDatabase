@@ -236,13 +236,6 @@ CREATE TABLE "submission_data" (
   PRIMARY KEY ("submission_id", "question_id")
 );
 
-CREATE TABLE "flagged" (
-  "submission_id" uuid NOT NULL,
-  "user_id" uuid NOT NULL DEFAULT (auth.uid()),
-  "created_at" timestamptz NOT NULL DEFAULT (now()),
-  PRIMARY KEY ("submission_id")
-);
-
 CREATE UNIQUE INDEX ON "team_users" ("team_num", "user_id");
 
 CREATE UNIQUE INDEX ON "team_requests" ("team_num", "user_id");
@@ -266,8 +259,6 @@ CREATE UNIQUE INDEX ON "questions" ("season", "category", "key");
 CREATE UNIQUE INDEX ON "questions" ("season", "category", "section_key", "index");
 
 CREATE INDEX ON "questions" ("season", "category");
-
-CREATE INDEX ON "flagged" ("user_id");
 
 ALTER TABLE "team_users" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE;
 
@@ -340,7 +331,3 @@ ALTER TABLE "submissions" ADD FOREIGN KEY ("scouted_for") REFERENCES "teams" ("n
 ALTER TABLE "submission_data" ADD FOREIGN KEY ("submission_id") REFERENCES "submissions" ("id") ON DELETE CASCADE;
 
 ALTER TABLE "submission_data" ADD FOREIGN KEY ("question_id") REFERENCES "questions" ("id") ON DELETE RESTRICT;
-
-ALTER TABLE "flagged" ADD FOREIGN KEY ("submission_id") REFERENCES "submissions" ("id") ON DELETE CASCADE;
-
-ALTER TABLE "flagged" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE;
