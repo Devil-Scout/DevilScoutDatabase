@@ -33,13 +33,13 @@ WHERE
 
 -- List of a team's users
 SELECT
-  id,
-  name
+  users.id,
+  users.name
 FROM
   users
   INNER JOIN team_users ON users.id = team_users.user_id
 WHERE
-  team_num = ?;
+  team_users.team_num = ?;
 
 -- A user's join request
 SELECT
@@ -52,13 +52,13 @@ WHERE
 
 -- List of join requests for a team
 SELECT
-  user_id,
-  name
+  users.user_id,
+  users.name
 FROM
   team_requests
   INNER JOIN users ON users.id = team_requests.user_id
 WHERE
-  team_num = ?;
+  team_requests.team_num = ?;
 
 -- A user's disabled state
 SELECT
@@ -71,20 +71,20 @@ WHERE
 
 -- List of a team's users and disabled state
 SELECT
-  id,
-  name,
-  (disabled_by IS NOT NULL) AS is_disabled,
-  disabled_by
+  users.id,
+  users.name,
+  (disabled_users.disabled_by IS NOT NULL) AS is_disabled,
+  disabled_users.disabled_by
 FROM
   users
   INNER JOIN team_users ON users.id = team_users.user_id
   LEFT JOIN disabled_users ON users.id = disabled_users.user_id
 WHERE
-  team_num = ?;
+  team_users.team_num = ?;
 
 -- List of a user's permissions
 SELECT
-  type
+  permission_type
 FROM
   permissions
 WHERE
@@ -93,11 +93,11 @@ WHERE
 -- List of permissions on a team
 SELECT
   permissions.user_id,
-  name,
-  type AS permission_type
+  users.name,
+  permissions.permission_type
 FROM
   permissions
   INNER JOIN users ON users.id = permissions.user_id
   INNER JOIN team_users ON users.id = team_users.user_id
 WHERE
-  team_num = ?;
+  team_users.team_num = ?;

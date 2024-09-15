@@ -133,7 +133,7 @@ USING (true);
 
 ALTER TABLE permissions ENABLE ROW LEVEL SECURITY;
 REVOKE ALL PRIVILEGES ON TABLE permissions FROM public, anon, authenticated;
-GRANT SELECT, DELETE, INSERT(user_id, type) ON TABLE permissions TO authenticated;
+GRANT SELECT, DELETE, INSERT(user_id, permission_type) ON TABLE permissions TO authenticated;
 
 CREATE POLICY "Anyone can SELECT their own permissions"
 ON permissions FOR SELECT TO authenticated

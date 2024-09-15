@@ -19,6 +19,7 @@ CREATE TYPE "frc_match_level" AS ENUM (
 
 CREATE OR REPLACE FUNCTION
 frc_match_level_2_text(frc_match_level) RETURNS TEXT
+SET search_path = ''
 AS $$ SELECT $1 $$
 STRICT IMMUTABLE LANGUAGE SQL;
 
@@ -71,9 +72,9 @@ CREATE TABLE "permission_types" (
 
 CREATE TABLE "permissions" (
   "user_id" uuid NOT NULL,
-  "type" citext NOT NULL,
+  "permission_type" citext NOT NULL,
   "granted_by" uuid DEFAULT (auth.uid()),
-  PRIMARY KEY ("user_id", "type")
+  PRIMARY KEY ("user_id", "permission_type")
 );
 
 CREATE TABLE "frc_seasons" (
@@ -183,12 +184,14 @@ CREATE TABLE "frc_match_results" (
 );
 
 CREATE TABLE "question_types" (
-  "id" text PRIMARY KEY
+  "id" text NOT NULL,
+  PRIMARY KEY ("id")
 );
 
 CREATE TABLE "categories" (
-  "id" text PRIMARY KEY,
-  "has_match" bool NOT NULL
+  "id" text NOT NULL,
+  "has_match" bool NOT NULL,
+  PRIMARY KEY ("id")
 );
 
 CREATE TABLE "question_sections" (
@@ -201,7 +204,7 @@ CREATE TABLE "question_sections" (
 );
 
 CREATE TABLE "questions" (
-  "id" uuid PRIMARY KEY DEFAULT (gen_random_uuid()),
+  "id" uuid NOT NULL DEFAULT (gen_random_uuid()),
   "season" smallint NOT NULL,
   "category" text NOT NULL,
   "section_key" text NOT NULL,
@@ -209,11 +212,12 @@ CREATE TABLE "questions" (
   "index" smallint NOT NULL,
   "prompt" text NOT NULL,
   "type" text NOT NULL,
-  "config" jsonb NOT NULL DEFAULT '{}'
+  "config" jsonb NOT NULL DEFAULT '{}',
+  PRIMARY KEY ("id")
 );
 
 CREATE TABLE "submissions" (
-  "id" uuid PRIMARY KEY DEFAULT (gen_random_uuid()),
+  "id" uuid NOT NULL DEFAULT (gen_random_uuid()),
   "category" text NOT NULL,
   "event_key" citext NOT NULL,
   "match_key" citext,
@@ -221,7 +225,8 @@ CREATE TABLE "submissions" (
   "team_key" citext NOT NULL,
   "scouted_by" uuid DEFAULT (auth.uid()),
   "scouted_for" smallint,
-  "created_at" timestamptz NOT NULL DEFAULT (now())
+  "created_at" timestamptz NOT NULL DEFAULT (now()),
+  PRIMARY KEY ("id")
 );
 
 CREATE TABLE "submission_data" (
@@ -232,9 +237,10 @@ CREATE TABLE "submission_data" (
 );
 
 CREATE TABLE "flagged" (
-  "submission_id" uuid PRIMARY KEY,
+  "submission_id" uuid NOT NULL,
   "user_id" uuid NOT NULL DEFAULT (auth.uid()),
-  "created_at" timestamptz NOT NULL DEFAULT (now())
+  "created_at" timestamptz NOT NULL DEFAULT (now()),
+  PRIMARY KEY ("submission_id")
 );
 
 CREATE UNIQUE INDEX ON "team_users" ("team_num", "user_id");
@@ -279,7 +285,7 @@ ALTER TABLE "disabled_users" ADD FOREIGN KEY ("disabled_by") REFERENCES "users" 
 
 ALTER TABLE "permissions" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE;
 
-ALTER TABLE "permissions" ADD FOREIGN KEY ("type") REFERENCES "permission_types" ("id") ON DELETE CASCADE;
+ALTER TABLE "permissions" ADD FOREIGN KEY ("permission_type") REFERENCES "permission_types" ("id") ON DELETE CASCADE;
 
 ALTER TABLE "permissions" ADD FOREIGN KEY ("granted_by") REFERENCES "users" ("id") ON DELETE SET NULL;
 
@@ -338,4 +344,3 @@ ALTER TABLE "submission_data" ADD FOREIGN KEY ("question_id") REFERENCES "questi
 ALTER TABLE "flagged" ADD FOREIGN KEY ("submission_id") REFERENCES "submissions" ("id") ON DELETE CASCADE;
 
 ALTER TABLE "flagged" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE;
-

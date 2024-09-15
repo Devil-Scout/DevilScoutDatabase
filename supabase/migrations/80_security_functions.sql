@@ -6,7 +6,7 @@ SET search_path = ''
 STABLE
 RETURNS NULL ON NULL INPUT
 RETURN permission_type IN (
-  SELECT type FROM permissions WHERE user_id = (SELECT auth.uid())
+  SELECT permission_type FROM permissions WHERE user_id = (SELECT auth.uid())
 );
 REVOKE EXECUTE ON FUNCTION user_has_permission FROM public, anon;
 

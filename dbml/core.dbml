@@ -119,13 +119,13 @@ Table permission_types {
 // - Allow users with 'manage_team' role to INSERT or DELETE their team's permissions
 Table permissions {
   user_id uuid [not null]
-  type citext [not null]
+  permission_type citext [not null]
   granted_by uuid [default: `auth.uid()`]
 
   indexes {
-    (user_id, type) [pk]
+    (user_id, permission_type) [pk]
   }
 }
 Ref: permissions.user_id > users.id [delete: cascade]
-Ref: permissions.type > permission_types.id [delete: cascade]
+Ref: permissions.permission_type > permission_types.id [delete: cascade]
 Ref: permissions.granted_by > users.id [delete: set null]

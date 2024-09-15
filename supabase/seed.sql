@@ -46,5 +46,5 @@ INSERT INTO users (id, name) VALUES
 INSERT INTO team_users (user_id, team_num, added_by) VALUES
 ('01234567-89ab-cdef-0123-456789abcdef', 1559, '01234567-89ab-cdef-0123-456789abcdef');
 
-INSERT INTO permissions (user_id, type, granted_by) VALUES
+INSERT INTO permissions (user_id, permission_type, granted_by) VALUES
 ('01234567-89ab-cdef-0123-456789abcdef', 'manage_team', '01234567-89ab-cdef-0123-456789abcdef');
