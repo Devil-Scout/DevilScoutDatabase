@@ -3,7 +3,7 @@
 ROOT_DIR="$(git rev-parse --show-toplevel)"
 
 # Concatenate all of the DBML files
-tmpdbml=$(mktemp)
+tmpdbml=$(mktemp '/tmp/combined_dbml.XXXXXX.tmp')
 echo -e "Source files:"
 for file in $(find "$ROOT_DIR/dbml" -name "*.dbml" | sort); do
   echo "- dbml/$(basename "$file")"
@@ -11,7 +11,7 @@ for file in $(find "$ROOT_DIR/dbml" -name "*.dbml" | sort); do
 done
 
 # Create a temporary file to edit the generated SQL
-tmpsql=$(mktemp)
+tmpsql=$(mktemp '/tmp/generated_sql.XXXXXX.tmp')
 
 # Add a header
 echo -e \
@@ -23,7 +23,12 @@ echo -e \
 
 # Generate the SQL code
 echo "Generating SQL..."
-dbml2sql "$tmpdbml" >> "$tmpsql"
+SQL="$(dbml2sql "$tmpdbml")"
+if echo "$SQL" | grep "dbml-error" >/dev/null; then
+  echo "$SQL"
+  exit
+fi
+echo "$SQL" >> "$tmpsql"
 
 # Apply the patch files
 echo "Patches:"
