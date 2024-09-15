@@ -1,10 +1,11 @@
 Adds key generation logic where needed
-@@ -0,6 +0,11 @@
+@@ -0,6 +0,12 @@
    'playoff'
  );
 
 +CREATE OR REPLACE FUNCTION
 +frc_match_level_2_text(frc_match_level) RETURNS TEXT
++SET search_path = ''
 +AS $$ SELECT $1 $$
 +STRICT IMMUTABLE LANGUAGE SQL;
 +

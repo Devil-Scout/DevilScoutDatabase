@@ -2,6 +2,7 @@ CREATE OR REPLACE FUNCTION
 user_has_permission(permission_type citext)
 RETURNS BOOLEAN
 LANGUAGE SQL
+SET search_path = ''
 STABLE
 RETURNS NULL ON NULL INPUT
 RETURN permission_type IN (
@@ -13,6 +14,7 @@ CREATE OR REPLACE FUNCTION
 user_team_num()
 RETURNS SMALLINT
 LANGUAGE SQL
+SET search_path = ''
 STABLE
 RETURNS NULL ON NULL INPUT
 RETURN (SELECT team_num FROM team_users WHERE user_id = (SELECT auth.uid()));
@@ -22,6 +24,7 @@ CREATE OR REPLACE FUNCTION
 user_on_team(team_num smallint)
 RETURNS BOOLEAN
 LANGUAGE SQL
+SET search_path = ''
 STABLE
 RETURNS NULL ON NULL INPUT
 RETURN (SELECT user_team_num()) = team_num;
@@ -31,6 +34,7 @@ CREATE OR REPLACE FUNCTION
 user_on_same_team(user_id uuid)
 RETURNS BOOLEAN
 LANGUAGE SQL
+SET search_path = ''
 STABLE
 RETURNS NULL ON NULL INPUT
 RETURN user_id IN (
