@@ -13,7 +13,9 @@ ON teams FOR UPDATE TO authenticated
 USING (
   (SELECT user_has_permission('manage_team'))
   AND
-  user_on_team(teams.number)
+  (SELECT user_is_not_disabled())
+  AND
+  number = (SELECT user_team_num())
 );
 
 -- users -------------------------------
@@ -25,7 +27,7 @@ GRANT SELECT, INSERT(name), UPDATE(name) ON TABLE users TO authenticated;
 CREATE POLICY "Anyone can SELECT their team's members"
 ON users FOR SELECT TO authenticated
 USING (
-  user_on_same_team(users.id)
+  get_user_team_num(users.id) = (SELECT user_team_num())
 );
 
 CREATE POLICY "Anyone can SELECT, INSERT, or UPDATE themself"
@@ -43,7 +45,7 @@ GRANT SELECT, DELETE, INSERT ON TABLE team_users TO authenticated;
 CREATE POLICY "Team members can SELECT each other"
 ON team_users FOR SELECT TO authenticated
 USING (
-  user_on_team(team_users.team_num)
+  team_num = (SELECT user_team_num())
 );
 
 CREATE POLICY "Anyone can DELETE themself from a team"
@@ -57,7 +59,9 @@ ON team_users FOR INSERT TO authenticated
 WITH CHECK (
   (SELECT user_has_permission('manage_team'))
   AND
-  user_on_team(team_users.team_num)
+  (SELECT user_is_not_disabled())
+  AND
+  team_num = (SELECT user_team_num())
   AND
   team_users.added_by = (SELECT auth.uid())
 );
@@ -84,7 +88,9 @@ ON team_requests FOR SELECT TO authenticated
 USING (
   (SELECT user_has_permission('manage_team'))
   AND
-  user_on_team(team_requests.team_num)
+  (SELECT user_is_not_disabled())
+  AND
+  team_num = (SELECT user_team_num())
 );
 
 CREATE POLICY "'manage_team' can DELETE requests"
@@ -92,7 +98,9 @@ ON team_requests FOR DELETE TO authenticated
 USING (
   (SELECT user_has_permission('manage_team'))
   AND
-  user_on_team(team_requests.team_num)
+  (SELECT user_is_not_disabled())
+  AND
+  team_num = (SELECT user_team_num())
 );
 
 -- disabled_users ----------------------
@@ -112,11 +120,15 @@ ON disabled_users TO authenticated
 USING (
   (SELECT user_has_permission('manage_team'))
   AND
-  user_on_same_team(disabled_users.user_id)
+  (SELECT user_is_not_disabled())
+  AND
+  get_user_team_num(disabled_users.user_id) = (SELECT user_team_num())
 ) WITH CHECK (
   (SELECT user_has_permission('manage_team'))
   AND
-  user_on_same_team(disabled_users.user_id)
+  (SELECT user_is_not_disabled())
+  AND
+  get_user_team_num(disabled_users.user_id) = (SELECT user_team_num())
 );
 
 -- permission_types --------------------
@@ -146,5 +158,7 @@ ON permissions TO authenticated
 USING (
   (SELECT user_has_permission('manage_team'))
   AND
-  user_on_same_team(permissions.user_id)
+  (SELECT user_is_not_disabled())
+  AND
+  get_user_team_num(permissions.user_id) = (SELECT user_team_num())
 )

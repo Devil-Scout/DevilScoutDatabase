@@ -11,33 +11,31 @@ RETURN permission_type IN (
 REVOKE EXECUTE ON FUNCTION user_has_permission FROM public, anon;
 
 CREATE OR REPLACE FUNCTION
+user_is_not_disabled()
+RETURNS BOOLEAN
+LANGUAGE SQL
+SET search_path = ''
+STABLE
+RETURN NOT EXISTS (
+  SELECT 1 FROM disabled_users WHERE user_id = (SELECT auth.uid())
+);
+REVOKE EXECUTE ON FUNCTION user_is_not_disabled FROM public, anon;
+
+CREATE OR REPLACE FUNCTION
 user_team_num()
 RETURNS SMALLINT
 LANGUAGE SQL
 SET search_path = ''
 STABLE
-RETURNS NULL ON NULL INPUT
 RETURN (SELECT team_num FROM team_users WHERE user_id = (SELECT auth.uid()));
 REVOKE EXECUTE ON FUNCTION user_team_num FROM public, anon;
 
 CREATE OR REPLACE FUNCTION
-user_on_team(team_num smallint)
-RETURNS BOOLEAN
+get_user_team_num(user_id uuid)
+RETURNS SMALLINT
 LANGUAGE SQL
 SET search_path = ''
 STABLE
 RETURNS NULL ON NULL INPUT
-RETURN (SELECT user_team_num()) = team_num;
-REVOKE EXECUTE ON FUNCTION user_on_team FROM public, anon;
-
-CREATE OR REPLACE FUNCTION
-user_on_same_team(user_id uuid)
-RETURNS BOOLEAN
-LANGUAGE SQL
-SET search_path = ''
-STABLE
-RETURNS NULL ON NULL INPUT
-RETURN user_id IN (
-  SELECT user_id FROM team_users WHERE team_num = (SELECT user_team_num())
-);
-REVOKE EXECUTE ON FUNCTION user_on_same_team FROM public, anon;
+RETURN (SELECT team_num FROM team_users WHERE team_users.user_id = user_id);
+REVOKE EXECUTE ON FUNCTION get_user_team_num FROM public, anon;
