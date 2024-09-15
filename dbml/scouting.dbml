@@ -1,19 +1,27 @@
 // RLS rules:
 // - Allow any user to SELECT
 Table question_types {
-  id text [pk]
+  id text [not null]
+
+  indexes {
+    id [pk]
+  }
 }
 
 // RLS rules:
 // - Allow any user to SELECT
 Table categories {
-  id text [pk]
+  id text [not null]
   has_match bool [not null]
+
+  indexes {
+    id [pk]
+  }
 }
 
 // RLS rules:
 // - Allow any user to SELECT
-Table sections {
+Table question_sections {
   season smallint [not null]
   category text [not null]
   key text [not null]
@@ -25,13 +33,13 @@ Table sections {
     (season, category, index) [unique]
   }
 }
-Ref: sections.category > categories.id [delete: restrict]
+Ref: question_sections.category > categories.id [delete: restrict]
 
 
 // RLS rules:
 // - Allow any user to SELECT
 Table questions {
-  id uuid [pk, default: `gen_random_uuid()`]
+  id uuid [not null, default: `gen_random_uuid()`]
   season smallint [not null]
   category text [not null]
   section_key text [not null]
@@ -42,13 +50,14 @@ Table questions {
   config jsonb [not null, default: '{}']
 
   indexes {
+    id [pk]
     (season, category, key) [unique]
     (season, category, section_key, index) [unique]
     (season, category)
   }
 }
 Ref: questions.category > categories.id [delete: restrict]
-Ref: questions.(season, category, section_key) > sections.(season, category, key)
+Ref: questions.(season, category, section_key) > question_sections.(season, category, key)
 Ref: questions.type > question_types.id [delete: restrict]
 
 // RLS rules:
@@ -61,7 +70,7 @@ Ref: questions.type > question_types.id [delete: restrict]
 // - if category requires match_key, ensure match_key != null
 // - on INSERT, ensure scouted_by and scouted_for != null
 Table submissions {
-  id uuid [pk, default: `gen_random_uuid()`]
+  id uuid [not null, default: `gen_random_uuid()`]
   category text [not null]
   event_key citext [not null]
   match_key citext
@@ -70,6 +79,10 @@ Table submissions {
   scouted_by uuid [default: `auth.uid()`]
   scouted_for smallint
   created_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    id [pk]
+  }
 }
 Ref: submissions.category > categories.id [delete: restrict]
 Ref: submissions.event_key > frc_events.key [delete: restrict]
@@ -99,11 +112,12 @@ Ref: submission_data.question_id > questions.id [delete: restrict]
 // - Allow any user to SELECT
 // - Allow role 'review_submissions' to INSERT or DELETE flags for their team
 Table flagged {
-  submission_id uuid [pk]
+  submission_id uuid [not null]
   user_id uuid [not null, default: `auth.uid()`]
   created_at timestamptz [not null, default: `now()`]
 
   indexes {
+    submission_id [pk]
     user_id
   }
 }

@@ -77,23 +77,25 @@ CREATE TABLE "permissions" (
 );
 
 CREATE TABLE "frc_seasons" (
-  "year" smallint PRIMARY KEY,
+  "year" smallint NOT NULL,
   "name" text NOT NULL,
-  "team_count" smallint NOT NULL
+  "team_count" smallint NOT NULL,
+  PRIMARY KEY ("year")
 );
 
 CREATE TABLE "frc_districts" (
-  "key" citext PRIMARY KEY
+  "key" citext NOT NULL
     GENERATED ALWAYS AS
       (season || code)
       STORED,
   "season" smallint NOT NULL,
   "code" citext NOT NULL,
-  "name" text NOT NULL
+  "name" text NOT NULL,
+  PRIMARY KEY ("key")
 );
 
 CREATE TABLE "frc_events" (
-  "key" citext PRIMARY KEY
+  "key" citext NOT NULL
     GENERATED ALWAYS AS
       (season || code)
       STORED,
@@ -108,16 +110,18 @@ CREATE TABLE "frc_events" (
   "country" text NOT NULL,
   "start_date" date NOT NULL,
   "end_date" date NOT NULL,
-  "website" text
+  "website" text,
+  PRIMARY KEY ("key")
 );
 
 CREATE TABLE "frc_district_events" (
-  "event_key" citext PRIMARY KEY,
-  "district_key" citext NOT NULL
+  "event_key" citext NOT NULL,
+  "district_key" citext NOT NULL,
+  PRIMARY KEY ("event_key")
 );
 
 CREATE TABLE "frc_teams" (
-  "key" citext PRIMARY KEY
+  "key" citext NOT NULL
     GENERATED ALWAYS AS
       (season || '_' || number)
       STORED,
@@ -130,12 +134,14 @@ CREATE TABLE "frc_teams" (
   "city" text NOT NULL,
   "province" text NOT NULL,
   "country" text NOT NULL,
-  "website" text
+  "website" text,
+  PRIMARY KEY ("key")
 );
 
 CREATE TABLE "frc_district_teams" (
-  "team_key" citext PRIMARY KEY,
-  "district_key" citext NOT NULL
+  "team_key" citext NOT NULL,
+  "district_key" citext NOT NULL,
+  PRIMARY KEY ("team_key")
 );
 
 CREATE TABLE "frc_event_teams" (
@@ -145,7 +151,7 @@ CREATE TABLE "frc_event_teams" (
 );
 
 CREATE TABLE "frc_matches" (
-  "key" citext PRIMARY KEY
+  "key" citext NOT NULL
     GENERATED ALWAYS AS
       (event_key || '_' || frc_match_level_2_text(level) || 's' || set || 'm' || number)
       STORED,
@@ -154,7 +160,8 @@ CREATE TABLE "frc_matches" (
   "set" smallint NOT NULL,
   "number" smallint NOT NULL,
   "name" text NOT NULL,
-  "scheduled_time" timestamp NOT NULL
+  "scheduled_time" timestamp NOT NULL,
+  PRIMARY KEY ("key")
 );
 
 CREATE TABLE "frc_match_teams" (
@@ -165,13 +172,14 @@ CREATE TABLE "frc_match_teams" (
 );
 
 CREATE TABLE "frc_match_results" (
-  "match_key" citext PRIMARY KEY,
+  "match_key" citext NOT NULL,
   "red_score" smallint NOT NULL,
   "blue_score" smallint NOT NULL,
   "red_breakdown" jsonb NOT NULL,
   "blue_breakdown" jsonb NOT NULL,
   "actual_time" timestamp NOT NULL,
-  "video_url" text
+  "video_url" text,
+  PRIMARY KEY ("match_key")
 );
 
 CREATE TABLE "question_types" (
@@ -183,7 +191,7 @@ CREATE TABLE "categories" (
   "has_match" bool NOT NULL
 );
 
-CREATE TABLE "sections" (
+CREATE TABLE "question_sections" (
   "season" smallint NOT NULL,
   "category" text NOT NULL,
   "key" text NOT NULL,
@@ -245,7 +253,7 @@ CREATE INDEX ON "frc_district_teams" ("district_key");
 
 CREATE UNIQUE INDEX ON "frc_matches" ("event_key", "level", "set", "number");
 
-CREATE UNIQUE INDEX ON "sections" ("season", "category", "index");
+CREATE UNIQUE INDEX ON "question_sections" ("season", "category", "index");
 
 CREATE UNIQUE INDEX ON "questions" ("season", "category", "key");
 
@@ -301,11 +309,11 @@ ALTER TABLE "frc_match_teams" ADD FOREIGN KEY ("team_key") REFERENCES "frc_teams
 
 ALTER TABLE "frc_match_results" ADD FOREIGN KEY ("match_key") REFERENCES "frc_matches" ("key");
 
-ALTER TABLE "sections" ADD FOREIGN KEY ("category") REFERENCES "categories" ("id") ON DELETE RESTRICT;
+ALTER TABLE "question_sections" ADD FOREIGN KEY ("category") REFERENCES "categories" ("id") ON DELETE RESTRICT;
 
 ALTER TABLE "questions" ADD FOREIGN KEY ("category") REFERENCES "categories" ("id") ON DELETE RESTRICT;
 
-ALTER TABLE "questions" ADD FOREIGN KEY ("season", "category", "section_key") REFERENCES "sections" ("season", "category", "key");
+ALTER TABLE "questions" ADD FOREIGN KEY ("season", "category", "section_key") REFERENCES "question_sections" ("season", "category", "key");
 
 ALTER TABLE "questions" ADD FOREIGN KEY ("type") REFERENCES "question_types" ("id") ON DELETE RESTRICT;
 

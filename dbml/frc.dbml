@@ -1,18 +1,23 @@
 // RLS: all of these should only allow all users to SELECT
 
 Table frc_seasons {
-  year smallint [pk]
+  year smallint [not null]
   name text [not null]
   team_count smallint [not null]
+
+  indexes {
+    year [pk] // patch: include name
+  }
 }
 
 Table frc_districts {
-  key citext [pk] // patch: generated stored
+  key citext [not null] // patch: generated stored
   season smallint [not null]
   code citext [not null]
   name text [not null]
 
   indexes {
+    key [pk]
     (season, code) [unique]
   }
 }
@@ -28,7 +33,7 @@ Enum frc_event_type {
 }
 
 Table frc_events {
-  key citext [pk] // patch: generated stored
+  key citext [not null] // patch: generated stored
   season smallint [not null]
   code citext [not null]
   type frc_event_type
@@ -43,20 +48,25 @@ Table frc_events {
   website text
 
   indexes {
+    key [pk]
     (season, code) [unique]
   }
 }
 Ref: frc_events.season > frc_seasons.year [delete: cascade]
 
 Table frc_district_events {
-  event_key citext [pk]
+  event_key citext [not null]
   district_key citext [not null]
+
+  indexes {
+    event_key [pk]
+  }
 }
 Ref: frc_district_events.event_key > frc_events.key [delete: cascade]
 Ref: frc_district_events.district_key > frc_districts.key [delete: cascade]
 
 Table frc_teams {
-  key citext [pk] // patch: generated stored
+  key citext [not null] // patch: generated stored
   season smallint [not null]
   number smallint [not null]
   name text [not null]
@@ -69,6 +79,7 @@ Table frc_teams {
   website text
 
   indexes {
+    key [pk]
     (season, number) [unique]
     number
   }
@@ -76,10 +87,11 @@ Table frc_teams {
 Ref: frc_teams.season > frc_seasons.year [delete: cascade]
 
 Table frc_district_teams {
-  team_key citext [pk]
+  team_key citext [not null]
   district_key citext [not null]
 
   indexes {
+    team_key [pk]
     district_key
   }
 }
@@ -104,7 +116,7 @@ Enum frc_match_level {
 }
 
 Table frc_matches {
-  key citext [pk] // patch: generated stored
+  key citext [not null] // patch: generated stored
   event_key citext [not null]
   level frc_match_level [not null]
   set smallint [not null]
@@ -113,6 +125,7 @@ Table frc_matches {
   scheduled_time timestamp [not null] // api returns local time
 
   indexes {
+    key [pk]
     (event_key, level, set, number) [unique]
   }
 }
@@ -136,12 +149,16 @@ Ref: frc_match_teams.match_key > frc_matches.key [delete: cascade]
 Ref: frc_match_teams.team_key > frc_teams.key [delete: cascade]
 
 Table frc_match_results {
-  match_key citext [pk]
+  match_key citext [not null]
   red_score smallint [not null]
   blue_score smallint [not null]
   red_breakdown jsonb [not null]
   blue_breakdown jsonb [not null]
   actual_time timestamp [not null]
   video_url text
+
+  indexes {
+    match_key [pk]
+  }
 }
 Ref: frc_match_results.match_key > frc_matches.key

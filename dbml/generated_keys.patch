@@ -15,8 +15,8 @@ Adds key generation logic where needed
  );
 
  CREATE TABLE "frc_districts" (
--  "key" citext PRIMARY KEY,
-+  "key" citext PRIMARY KEY
+-  "key" citext NOT NULL,
++  "key" citext NOT NULL
 +    GENERATED ALWAYS AS
 +      (season || code)
 +      STORED,
@@ -27,8 +27,8 @@ Adds key generation logic where needed
  );
 
  CREATE TABLE "frc_events" (
--  "key" citext PRIMARY KEY,
-+  "key" citext PRIMARY KEY
+-  "key" citext NOT NULL,
++  "key" citext NOT NULL
 +    GENERATED ALWAYS AS
 +      (season || code)
 +      STORED,
@@ -39,8 +39,8 @@ Adds key generation logic where needed
  );
 
  CREATE TABLE "frc_teams" (
--  "key" citext PRIMARY KEY,
-+  "key" citext PRIMARY KEY
+-  "key" citext NOT NULL,
++  "key" citext NOT NULL
 +    GENERATED ALWAYS AS
 +      (season || '_' || number)
 +      STORED,
@@ -51,8 +51,8 @@ Adds key generation logic where needed
  );
 
  CREATE TABLE "frc_matches" (
--  "key" citext PRIMARY KEY,
-+  "key" citext PRIMARY KEY
+-  "key" citext NOT NULL,
++  "key" citext NOT NULL
 +    GENERATED ALWAYS AS
 +      (event_key || '_' || frc_match_level_2_text(level) || 's' || set || 'm' || number)
 +      STORED,
