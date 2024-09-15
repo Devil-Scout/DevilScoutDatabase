@@ -1,0 +1,46 @@
+Patches certain primary key indexes to include additional fields
+@@ -0,7 +0,7 @@
+   "number" smallint NOT NULL,
+   "name" text NOT NULL,
+   "created_at" timestamptz NOT NULL DEFAULT (now()),
+-  PRIMARY KEY ("number")
++  PRIMARY KEY ("number") INCLUDE (name)
+ );
+
+ CREATE TABLE "users" (
+@@ -0,7 +0,7 @@
+   "id" uuid NOT NULL DEFAULT (auth.uid()),
+   "name" text NOT NULL,
+   "created_at" timestamptz NOT NULL DEFAULT (now()),
+-  PRIMARY KEY ("id")
++  PRIMARY KEY ("id") INCLUDE (name)
+ );
+
+ CREATE TABLE "team_users" (
+@@ -0,7 +0,7 @@
+   "team_num" smallint NOT NULL,
+   "added_by" uuid NOT NULL,
+   "joined_at" timestamptz NOT NULL DEFAULT (now()),
+-  PRIMARY KEY ("user_id")
++  PRIMARY KEY ("user_id") INCLUDE (team_num)
+ );
+
+ CREATE TABLE "team_requests" (
+@@ -0,7 +0,7 @@
+   "user_id" uuid NOT NULL DEFAULT (auth.uid()),
+   "team_num" smallint NOT NULL,
+   "requested_at" timestamptz NOT NULL DEFAULT (now()),
+-  PRIMARY KEY ("user_id")
++  PRIMARY KEY ("user_id") INCLUDE (team_num, requested_at)
+ );
+
+ CREATE TABLE "disabled_users" (
+@@ -0,7 +0,7 @@
+ CREATE TABLE "disabled_users" (
+   "user_id" uuid NOT NULL,
+   "disabled_by" uuid NOT NULL DEFAULT (auth.uid()),
+-  PRIMARY KEY ("user_id")
++  PRIMARY KEY ("user_id") INCLUDE (disabled_by)
+ );
+
+ CREATE TABLE "permission_types" (

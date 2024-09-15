@@ -28,38 +28,45 @@ CREATE TYPE "frc_alliance" AS ENUM (
 );
 
 CREATE TABLE "teams" (
-  "number" smallint PRIMARY KEY,
+  "number" smallint NOT NULL,
   "name" text NOT NULL,
-  "created_at" timestamptz NOT NULL DEFAULT (now())
+  "created_at" timestamptz NOT NULL DEFAULT (now()),
+  PRIMARY KEY ("number") INCLUDE (name)
 );
 
 CREATE TABLE "users" (
-  "id" uuid PRIMARY KEY DEFAULT (auth.uid()),
+  "id" uuid NOT NULL DEFAULT (auth.uid()),
   "name" text NOT NULL,
-  "created_at" timestamptz NOT NULL DEFAULT (now())
+  "created_at" timestamptz NOT NULL DEFAULT (now()),
+  PRIMARY KEY ("id") INCLUDE (name)
 );
 
 CREATE TABLE "team_users" (
-  "user_id" uuid PRIMARY KEY,
+  "user_id" uuid NOT NULL,
   "team_num" smallint NOT NULL,
-  "added_by" uuid NOT NULL
+  "added_by" uuid NOT NULL,
+  "joined_at" timestamptz NOT NULL DEFAULT (now()),
+  PRIMARY KEY ("user_id") INCLUDE (team_num)
 );
 
 CREATE TABLE "team_requests" (
-  "user_id" uuid PRIMARY KEY DEFAULT (auth.uid()),
+  "user_id" uuid NOT NULL DEFAULT (auth.uid()),
   "team_num" smallint NOT NULL,
-  "requested_at" timestamptz NOT NULL DEFAULT (now())
+  "requested_at" timestamptz NOT NULL DEFAULT (now()),
+  PRIMARY KEY ("user_id") INCLUDE (team_num, requested_at)
 );
 
 CREATE TABLE "disabled_users" (
-  "user_id" uuid PRIMARY KEY,
-  "disabled_by" uuid NOT NULL DEFAULT (auth.uid())
+  "user_id" uuid NOT NULL,
+  "disabled_by" uuid NOT NULL DEFAULT (auth.uid()),
+  PRIMARY KEY ("user_id") INCLUDE (disabled_by)
 );
 
 CREATE TABLE "permission_types" (
-  "id" citext PRIMARY KEY,
+  "id" citext NOT NULL,
   "name" text NOT NULL,
-  "description" text NOT NULL
+  "description" text NOT NULL,
+  PRIMARY KEY ("id")
 );
 
 CREATE TABLE "permissions" (
@@ -76,7 +83,10 @@ CREATE TABLE "frc_seasons" (
 );
 
 CREATE TABLE "frc_districts" (
-  "key" citext PRIMARY KEY,
+  "key" citext PRIMARY KEY
+    GENERATED ALWAYS AS
+      (season || code)
+      STORED,
   "season" smallint NOT NULL,
   "code" citext NOT NULL,
   "name" text NOT NULL
@@ -219,9 +229,9 @@ CREATE TABLE "flagged" (
   "created_at" timestamptz NOT NULL DEFAULT (now())
 );
 
-CREATE INDEX ON "team_users" ("team_num");
+CREATE UNIQUE INDEX ON "team_users" ("team_num", "user_id");
 
-CREATE INDEX ON "team_requests" ("team_num");
+CREATE UNIQUE INDEX ON "team_requests" ("team_num", "user_id");
 
 CREATE UNIQUE INDEX ON "frc_districts" ("season", "code");
 

@@ -7,7 +7,7 @@ Table frc_seasons {
 }
 
 Table frc_districts {
-  key citext [pk]
+  key citext [pk] // patch: generated stored
   season smallint [not null]
   code citext [not null]
   name text [not null]
@@ -28,7 +28,7 @@ Enum frc_event_type {
 }
 
 Table frc_events {
-  key citext [pk] // fixme: generate stored
+  key citext [pk] // patch: generated stored
   season smallint [not null]
   code citext [not null]
   type frc_event_type
@@ -56,7 +56,7 @@ Ref: frc_district_events.event_key > frc_events.key [delete: cascade]
 Ref: frc_district_events.district_key > frc_districts.key [delete: cascade]
 
 Table frc_teams {
-  key citext [pk]
+  key citext [pk] // patch: generated stored
   season smallint [not null]
   number smallint [not null]
   name text [not null]
@@ -104,7 +104,7 @@ Enum frc_match_level {
 }
 
 Table frc_matches {
-  key citext [pk] // fixme: generate stored
+  key citext [pk] // patch: generated stored
   event_key citext [not null]
   level frc_match_level [not null]
   set smallint [not null]

@@ -6,9 +6,13 @@
 // - Allow the 'manage_team' role to UPDATE their team
 //   - disallow editing number, created_at
 Table teams {
-  number smallint [pk]
+  number smallint [not null]
   name text [not null]
   created_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    number [pk] // patch: include name
+  }
 }
 
 // Represents a single user of the platform. Users may create themselves.
@@ -17,9 +21,13 @@ Table teams {
 // - Allow users to INSERT or UPDATE themselves
 //   - disallow editing id, created_at
 Table users {
-  id uuid [pk, default: `auth.uid()`]
+  id uuid [not null, default: `auth.uid()`]
   name text [not null]
   created_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    id [pk] // patch: include name
+  }
 }
 
 // Represents a user's association with a team.
@@ -30,12 +38,14 @@ Table users {
 // Hooks:
 // - post-INSERT: DELETE relevant request from team_requests
 Table team_users {
-  user_id uuid [pk]
+  user_id uuid [not null]
   team_num smallint [not null]
   added_by uuid [not null]
+  joined_at timestamptz [not null, default: `now()`]
 
   indexes {
-    team_num
+    user_id [pk] // patch: include team_num
+    (team_num, user_id) [unique]
   }
 }
 Ref: team_users.user_id > users.id [delete: cascade]
@@ -48,12 +58,13 @@ Ref: team_users.added_by > users.id [delete: set null]
 // Checks:
 // - ensure user does not belong to a team
 Table team_requests {
-  user_id uuid [pk, default: `auth.uid()`]
+  user_id uuid [not null, default: `auth.uid()`]
   team_num smallint [not null]
   requested_at timestamptz [not null, default: `now()`]
 
   indexes {
-    team_num
+    user_id [pk] // patch: include team_num, requested_at
+    (team_num, user_id) [unique]
   }
 }
 Ref: team_requests.user_id > users.id [delete: cascade]
@@ -67,8 +78,12 @@ Ref: team_requests.team_num > teams.number [delete: cascade]
 // - ensure user has a team
 // - ensure user's team matches disabler's team
 Table disabled_users {
-  user_id uuid [pk]
+  user_id uuid [not null]
   disabled_by uuid [not null, default: `auth.uid()`]
+
+  indexes {
+    user_id [pk] // patch: include disabled_by
+  }
 }
 Ref: disabled_users.user_id > users.id [delete: cascade]
 Ref: disabled_users.disabled_by > users.id [delete: cascade]
@@ -90,9 +105,13 @@ Ref: disabled_users.disabled_by > users.id [delete: cascade]
 // RLS rules:
 // - Allow any user to SELECT anything
 Table permission_types {
-  id citext [pk]
+  id citext [not null]
   name text [not null]
   description text [not null]
+
+  indexes {
+    id [pk]
+  }
 }
 
 // RLS rules:
