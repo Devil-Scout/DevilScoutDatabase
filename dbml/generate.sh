@@ -5,7 +5,7 @@ ROOT_DIR="$(git rev-parse --show-toplevel)"
 # Concatenate all of the DBML files
 tmpdbml=$(mktemp)
 echo -e "Source files:"
-for file in $(find "$ROOT_DIR/dbml" -name "*.dbml"); do
+for file in $(find "$ROOT_DIR/dbml" -name "*.dbml" | sort); do
   echo "- dbml/$(basename "$file")"
   cat "$file" >> "$tmpdbml"
 done
@@ -27,7 +27,7 @@ dbml2sql "$tmpdbml" >> "$tmpsql"
 
 # Apply the patch files
 echo "Patches:"
-for file in $(find "$ROOT_DIR/dbml" -name "*.patch"); do
+for file in $(find "$ROOT_DIR/dbml" -name "*.patch" | sort); do
   echo "- dbml/$(basename "$file")"
   patch -us "$tmpsql" "$file"
 done
