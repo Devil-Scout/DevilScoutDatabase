@@ -11,7 +11,7 @@ USING (true);
 CREATE POLICY "'manage_team' can UPDATE their team"
 ON teams FOR UPDATE TO authenticated
 USING (
-  user_has_permission('manage_team')
+  (SELECT user_has_permission('manage_team'))
   AND
   user_on_team(teams.number)
 );
@@ -55,7 +55,7 @@ USING (
 CREATE POLICY "'manage_team' can INSERT users"
 ON team_users FOR INSERT TO authenticated
 WITH CHECK (
-  user_has_permission('manage_team')
+  (SELECT user_has_permission('manage_team'))
   AND
   user_on_team(team_users.team_num)
   AND
@@ -74,15 +74,15 @@ USING (
   user_id = (SELECT auth.uid())
 )
 WITH CHECK(
-  user_id = (SELECT auth.uid())
+  (SELECT user_team_num() IS NULL)
   AND
-  user_team_num() IS NULL
+  user_id = (SELECT auth.uid())
 );
 
 CREATE POLICY "'manage_team' can SELECT requests"
 ON team_requests FOR SELECT TO authenticated
 USING (
-  user_has_permission('manage_team')
+  (SELECT user_has_permission('manage_team'))
   AND
   user_on_team(team_requests.team_num)
 );
@@ -90,7 +90,7 @@ USING (
 CREATE POLICY "'manage_team' can DELETE requests"
 ON team_requests FOR DELETE TO authenticated
 USING (
-  user_has_permission('manage_team')
+  (SELECT user_has_permission('manage_team'))
   AND
   user_on_team(team_requests.team_num)
 );
@@ -110,11 +110,11 @@ USING (
 CREATE POLICY "'manage_team' can SELECT, INSERT, or DELETE entries"
 ON disabled_users TO authenticated
 USING (
-  user_has_permission('manage_team')
+  (SELECT user_has_permission('manage_team'))
   AND
   user_on_same_team(disabled_users.user_id)
 ) WITH CHECK (
-  user_has_permission('manage_team')
+  (SELECT user_has_permission('manage_team'))
   AND
   user_on_same_team(disabled_users.user_id)
 );
@@ -144,7 +144,7 @@ USING (
 CREATE POLICY "'manage_team' can SELECT, INSERT, or DELETE permissions"
 ON permissions TO authenticated
 USING (
-  user_has_permission('manage_team')
+  (SELECT user_has_permission('manage_team'))
   AND
   user_on_same_team(permissions.user_id)
 )
