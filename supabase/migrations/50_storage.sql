@@ -9,7 +9,7 @@ INSERT INTO
 VALUES
   (
     'question-info',
-    'Question Info',
+    'question-info',
     FALSE,
     (1 * 1024 * 1024),
     '{ "text/markdown" }'

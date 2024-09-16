@@ -45,6 +45,7 @@ Table questions {
   prompt text [not null]
   type citext [not null]
   config jsonb [not null, default: '{}']
+  info_filepath text
 
   indexes {
     id [pk]
