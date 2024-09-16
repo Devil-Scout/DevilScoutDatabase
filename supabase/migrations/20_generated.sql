@@ -45,7 +45,7 @@ CREATE TABLE "users" (
 CREATE TABLE "team_users" (
   "user_id" uuid NOT NULL,
   "team_num" smallint NOT NULL,
-  "added_by" uuid NOT NULL,
+  "added_by" uuid DEFAULT (auth.uid()),
   "joined_at" timestamptz NOT NULL DEFAULT (now()),
   PRIMARY KEY ("user_id") INCLUDE (team_num)
 );
@@ -184,41 +184,38 @@ CREATE TABLE "frc_match_results" (
 );
 
 CREATE TABLE "question_types" (
-  "id" text NOT NULL,
+  "id" citext NOT NULL,
   PRIMARY KEY ("id")
 );
 
 CREATE TABLE "categories" (
-  "id" text NOT NULL,
+  "id" citext NOT NULL,
   "has_match" bool NOT NULL,
   PRIMARY KEY ("id")
 );
 
 CREATE TABLE "question_sections" (
+  "id" uuid NOT NULL DEFAULT (gen_random_uuid()),
   "season" smallint NOT NULL,
-  "category" text NOT NULL,
-  "key" text NOT NULL,
+  "category" citext NOT NULL,
   "index" smallint NOT NULL,
   "heading" text NOT NULL,
-  PRIMARY KEY ("season", "category", "key")
+  PRIMARY KEY ("id")
 );
 
 CREATE TABLE "questions" (
   "id" uuid NOT NULL DEFAULT (gen_random_uuid()),
-  "season" smallint NOT NULL,
-  "category" text NOT NULL,
-  "section_key" text NOT NULL,
-  "key" text NOT NULL,
+  "section_id" uuid NOT NULL,
   "index" smallint NOT NULL,
   "prompt" text NOT NULL,
-  "type" text NOT NULL,
+  "type" citext NOT NULL,
   "config" jsonb NOT NULL DEFAULT '{}',
   PRIMARY KEY ("id")
 );
 
 CREATE TABLE "submissions" (
   "id" uuid NOT NULL DEFAULT (gen_random_uuid()),
-  "category" text NOT NULL,
+  "category" citext NOT NULL,
   "event_key" citext NOT NULL,
   "match_key" citext,
   "season" smallint NOT NULL,
@@ -253,12 +250,6 @@ CREATE INDEX ON "frc_district_teams" ("district_key");
 CREATE UNIQUE INDEX ON "frc_matches" ("event_key", "level", "set", "number");
 
 CREATE UNIQUE INDEX ON "question_sections" ("season", "category", "index");
-
-CREATE UNIQUE INDEX ON "questions" ("season", "category", "key");
-
-CREATE UNIQUE INDEX ON "questions" ("season", "category", "section_key", "index");
-
-CREATE INDEX ON "questions" ("season", "category");
 
 ALTER TABLE "team_users" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE;
 
@@ -308,9 +299,7 @@ ALTER TABLE "frc_match_results" ADD FOREIGN KEY ("match_key") REFERENCES "frc_ma
 
 ALTER TABLE "question_sections" ADD FOREIGN KEY ("category") REFERENCES "categories" ("id") ON DELETE RESTRICT;
 
-ALTER TABLE "questions" ADD FOREIGN KEY ("category") REFERENCES "categories" ("id") ON DELETE RESTRICT;
-
-ALTER TABLE "questions" ADD FOREIGN KEY ("season", "category", "section_key") REFERENCES "question_sections" ("season", "category", "key");
+ALTER TABLE "questions" ADD FOREIGN KEY ("section_id") REFERENCES "question_sections" ("id");
 
 ALTER TABLE "questions" ADD FOREIGN KEY ("type") REFERENCES "question_types" ("id") ON DELETE RESTRICT;
 
