@@ -60,8 +60,6 @@ WITH CHECK (
   team_users.added_by = (SELECT auth.uid())
 );
 
-CREATE POLICY "'manage_team' can DELETE users from their team"
-
 -- team_requests -----------------------
 ALTER TABLE team_requests ENABLE ROW LEVEL SECURITY;
 GRANT SELECT, DELETE, INSERT(team_num) ON TABLE team_requests TO public, anon, authenticated;
