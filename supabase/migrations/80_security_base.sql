@@ -47,17 +47,16 @@ SET
 CREATE FUNCTION is_user_on_same_team (user_id uuid) RETURNS BOOLEAN STRICT
 SET
   search_path TO '' STABLE SECURITY DEFINER LANGUAGE SQL RETURN (
-    EXISTS (
+    (
       SELECT
-        1
+        team_num
       FROM
         team_users
       WHERE
         team_users.user_id = user_id
-        AND team_users.team_num = (
-          SELECT
-            get_team_num ()
-        )
+    ) = (
+      SELECT
+        get_team_num ()
     )
   );
 
