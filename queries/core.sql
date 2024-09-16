@@ -52,7 +52,7 @@ WHERE
 
 -- List of join requests for a team
 SELECT
-  users.user_id,
+  users.id,
   users.name
 FROM
   team_requests
