@@ -1,7 +1,7 @@
 // RLS rules:
 // - Allow any user to SELECT
 Table question_types {
-  id text [not null]
+  id citext [not null]
 
   indexes {
     id [pk]
@@ -11,7 +11,7 @@ Table question_types {
 // RLS rules:
 // - Allow any user to SELECT
 Table categories {
-  id text [not null]
+  id citext [not null]
   has_match bool [not null]
 
   indexes {
@@ -22,14 +22,14 @@ Table categories {
 // RLS rules:
 // - Allow any user to SELECT
 Table question_sections {
+  id uuid [not null, default: `gen_random_uuid()`]
   season smallint [not null]
-  category text [not null]
-  key text [not null]
+  category citext [not null]
   index smallint [not null]
   heading text [not null]
 
   indexes {
-    (season, category, key) [pk]
+    id [pk]
     (season, category, index) [unique]
   }
 }
@@ -40,24 +40,17 @@ Ref: question_sections.category > categories.id [delete: restrict]
 // - Allow any user to SELECT
 Table questions {
   id uuid [not null, default: `gen_random_uuid()`]
-  season smallint [not null]
-  category text [not null]
-  section_key text [not null]
-  key text [not null]
+  section_id uuid [not null]
   index smallint [not null]
   prompt text [not null]
-  type text [not null]
+  type citext [not null]
   config jsonb [not null, default: '{}']
 
   indexes {
     id [pk]
-    (season, category, key) [unique]
-    (season, category, section_key, index) [unique]
-    (season, category)
   }
 }
-Ref: questions.category > categories.id [delete: restrict]
-Ref: questions.(season, category, section_key) > question_sections.(season, category, key)
+Ref: questions.section_id > question_sections.id
 Ref: questions.type > question_types.id [delete: restrict]
 
 // RLS rules:
@@ -68,7 +61,7 @@ Ref: questions.type > question_types.id [delete: restrict]
 // - on INSERT, ensure scouted_by and scouted_for != null
 Table submissions {
   id uuid [not null, default: `gen_random_uuid()`]
-  category text [not null]
+  category citext [not null]
   event_key citext [not null]
   match_key citext
   season smallint [not null]

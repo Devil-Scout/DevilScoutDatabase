@@ -6,7 +6,7 @@ Table frc_seasons {
   team_count smallint [not null]
 
   indexes {
-    year [pk] // patch: include name
+    year [pk]
   }
 }
 

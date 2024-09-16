@@ -40,7 +40,7 @@ Table users {
 Table team_users {
   user_id uuid [not null]
   team_num smallint [not null]
-  added_by uuid [not null]
+  added_by uuid [default: `auth.uid()`]
   joined_at timestamptz [not null, default: `now()`]
 
   indexes {
