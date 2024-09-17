@@ -9,24 +9,26 @@ Table frc_seasons {
   indexes {
     year [pk]
   }
+
+  Note: 'An FRC season, one per year'
 }
 
 Table frc_districts {
-  key citext [not null] // patch: generated stored
   season smallint [not null]
   code citext [not null]
   name text [not null]
   last_modified timestamptz [not null]
 
   indexes {
-    key [pk]
-    (season, code) [unique]
+    (season, code) [pk]
   }
+
+  Note: 'An FRC district, one per year'
 }
 Ref: frc_districts.season > frc_seasons.year [delete: cascade]
 
 Enum frc_event_type {
-  // null // None
+  none // None
   off_season // OffSeason, OffSeasonWithAzureSync
   regional // Regional
   district // DistrictEvent
@@ -35,10 +37,9 @@ Enum frc_event_type {
 }
 
 Table frc_events {
-  key citext [not null] // patch: generated stored
   season smallint [not null]
   code citext [not null]
-  type frc_event_type
+  type frc_event_type [not null]
   name text [not null]
   venue text [not null]
   address text [not null]
@@ -47,30 +48,18 @@ Table frc_events {
   country text [not null]
   start_date date [not null]
   end_date date [not null]
+  district_code citext
   website text
   last_modified timestamptz [not null]
 
   indexes {
-    key [pk]
-    (season, code) [unique]
+    (season, code) [pk]
   }
 }
 Ref: frc_events.season > frc_seasons.year [delete: cascade]
-
-Table frc_district_events {
-  event_key citext [not null]
-  district_key citext [not null]
-  last_modified timestamptz [not null]
-
-  indexes {
-    event_key [pk]
-  }
-}
-Ref: frc_district_events.event_key > frc_events.key [delete: cascade]
-Ref: frc_district_events.district_key > frc_districts.key [delete: cascade]
+Ref: frc_events.(season, district_code) > frc_districts.(season, code) [delete: set null]
 
 Table frc_teams {
-  key citext [not null] // patch: generated stored
   season smallint [not null]
   number smallint [not null]
   name text [not null]
@@ -80,52 +69,49 @@ Table frc_teams {
   city text [not null]
   province text [not null]
   country text [not null]
+  district_code citext
   website text
   last_modified timestamptz [not null]
 
   indexes {
-    key [pk]
-    (season, number) [unique]
-    number
+    (season, number) [pk]
+    (number, season) [unique]
   }
 }
 Ref: frc_teams.season > frc_seasons.year [delete: cascade]
-
-Table frc_district_teams {
-  team_key citext [not null]
-  district_key citext [not null]
-  last_modified timestamptz [not null]
-
-  indexes {
-    team_key [pk]
-    district_key
-  }
-}
-Ref: frc_district_teams.team_key > frc_teams.key [delete: cascade]
-Ref: frc_district_teams.district_key > frc_districts.key [delete: cascade]
+Ref: frc_teams.(season, district_code) > frc_districts.(season, code) [delete: set null]
 
 Table frc_event_teams {
-  event_key citext [not null]
-  team_key citext [not null]
+  season smallint [not null]
+  event_code citext [not null]
+  team_num smallint [not null]
   last_modified timestamptz [not null]
 
   indexes {
-    (event_key, team_key) [pk]
+    (season, event_code, team_num) [pk]
+    (team_num, season, event_code) [unique]
   }
 }
-Ref: frc_event_teams.event_key > frc_events.key [delete: cascade]
-Ref: frc_event_teams.team_key > frc_teams.key [delete: cascade]
+Ref: frc_event_teams.(season, event_code) > frc_events.(season, code) [delete: cascade]
+Ref: frc_event_teams.(season, team_num) > frc_teams.(season, number) [delete: cascade]
 
-Enum frc_match_level {
-  practice
-  qual
-  playoff
+Table frc_match_levels {
+  id citext [not null]
+  name citext [not null]
+
+  indexes {
+    id [pk]
+    name [unique] // patch: include id
+  }
 }
 
 Table frc_matches {
+  // It's not practical to reference a 6-column pk from other tables
+  // Solution: generate a concatenated pk
   key citext [not null] // patch: generated stored
-  event_key citext [not null]
-  level frc_match_level [not null]
+  season smallint [not null]
+  event_code citext [not null]
+  level citext [not null]
   set smallint [not null]
   number smallint [not null]
   name text [not null]
@@ -134,10 +120,11 @@ Table frc_matches {
 
   indexes {
     key [pk]
-    (event_key, level, set, number) [unique]
+    (season, event_code, level, set, number) [unique]
   }
 }
-Ref: frc_matches.event_key > frc_events.key [delete: cascade]
+Ref: frc_matches.(season, event_code) > frc_events.(season, code) [delete: cascade]
+Ref: frc_matches.level > frc_match_levels.id [delete: restrict]
 
 Enum frc_alliance {
   red
@@ -146,16 +133,16 @@ Enum frc_alliance {
 
 Table frc_match_teams {
   match_key citext [not null]
-  team_key citext [not null]
+  team_num smallint [not null]
   alliance frc_alliance [not null]
   last_modified timestamptz [not null]
 
   indexes {
-    (match_key, team_key) [pk]
+    (match_key, team_num) [pk]
   }
 }
 Ref: frc_match_teams.match_key > frc_matches.key [delete: cascade]
-Ref: frc_match_teams.team_key > frc_teams.key [delete: cascade]
+// Cannot create f_key to frc_teams without season, but that gets messy
 
 Table frc_match_results {
   match_key citext [not null]

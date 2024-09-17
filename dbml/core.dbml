@@ -63,8 +63,8 @@ Table team_requests {
   requested_at timestamptz [not null, default: `now()`]
 
   indexes {
-    user_id [pk] // patch: include team_num, requested_at
-    (team_num, user_id) [unique]
+    user_id [pk]
+    (team_num, requested_at) // patch: include user_id
   }
 }
 Ref: team_requests.user_id > users.id [delete: cascade]
@@ -80,9 +80,11 @@ Ref: team_requests.team_num > teams.number [delete: cascade]
 Table disabled_users {
   user_id uuid [not null]
   disabled_by uuid [not null, default: `auth.uid()`]
+  disabled_at timestamptz [not null, default: `now()`]
 
   indexes {
-    user_id [pk] // patch: include disabled_by
+    user_id [pk]
+    (disabled_by, disabled_at)
   }
 }
 Ref: disabled_users.user_id > users.id [delete: cascade]
@@ -121,9 +123,11 @@ Table permissions {
   user_id uuid [not null]
   permission_type citext [not null]
   granted_by uuid [default: `auth.uid()`]
+  granted_at timestamptz [default: `now()`]
 
   indexes {
     (user_id, permission_type) [pk]
+    (granted_by, granted_at)
   }
 }
 Ref: permissions.user_id > users.id [delete: cascade]
