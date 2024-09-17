@@ -4,6 +4,7 @@ Table frc_seasons {
   year smallint [not null]
   name text [not null]
   team_count smallint [not null]
+  last_modified timestamptz [not null]
 
   indexes {
     year [pk]
@@ -15,6 +16,7 @@ Table frc_districts {
   season smallint [not null]
   code citext [not null]
   name text [not null]
+  last_modified timestamptz [not null]
 
   indexes {
     key [pk]
@@ -46,6 +48,7 @@ Table frc_events {
   start_date date [not null]
   end_date date [not null]
   website text
+  last_modified timestamptz [not null]
 
   indexes {
     key [pk]
@@ -57,6 +60,7 @@ Ref: frc_events.season > frc_seasons.year [delete: cascade]
 Table frc_district_events {
   event_key citext [not null]
   district_key citext [not null]
+  last_modified timestamptz [not null]
 
   indexes {
     event_key [pk]
@@ -77,6 +81,7 @@ Table frc_teams {
   province text [not null]
   country text [not null]
   website text
+  last_modified timestamptz [not null]
 
   indexes {
     key [pk]
@@ -89,6 +94,7 @@ Ref: frc_teams.season > frc_seasons.year [delete: cascade]
 Table frc_district_teams {
   team_key citext [not null]
   district_key citext [not null]
+  last_modified timestamptz [not null]
 
   indexes {
     team_key [pk]
@@ -101,6 +107,7 @@ Ref: frc_district_teams.district_key > frc_districts.key [delete: cascade]
 Table frc_event_teams {
   event_key citext [not null]
   team_key citext [not null]
+  last_modified timestamptz [not null]
 
   indexes {
     (event_key, team_key) [pk]
@@ -123,6 +130,7 @@ Table frc_matches {
   number smallint [not null]
   name text [not null]
   scheduled_time timestamp [not null] // api returns local time
+  last_modified timestamptz [not null]
 
   indexes {
     key [pk]
@@ -140,6 +148,7 @@ Table frc_match_teams {
   match_key citext [not null]
   team_key citext [not null]
   alliance frc_alliance [not null]
+  last_modified timestamptz [not null]
 
   indexes {
     (match_key, team_key) [pk]
@@ -156,6 +165,7 @@ Table frc_match_results {
   blue_breakdown jsonb [not null]
   actual_time timestamp [not null]
   video_url text
+  last_modified timestamptz [not null]
 
   indexes {
     match_key [pk]
