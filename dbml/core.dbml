@@ -1,10 +1,3 @@
-// Represents a team utilizing the Devil Scout platform.
-// Teams may not create themselves; they must request this of platform maintainers (1559).
-// RLS Rules:
-// - Allow anyone to SELECT
-//   - For requesting to join teams
-// - Allow the 'manage_team' role to UPDATE their team
-//   - disallow editing number, created_at
 Table teams {
   number smallint [not null]
   name text [not null]
@@ -13,13 +6,10 @@ Table teams {
   indexes {
     number [pk] // patch: include name
   }
+
+  Note: 'A team utilizing the platform'
 }
 
-// Represents a single user of the platform. Users may create themselves.
-// RLS rules:
-// - Allow team members to SELECT own team
-// - Allow users to INSERT or UPDATE themselves
-//   - disallow editing id, created_at
 Table users {
   id uuid [not null, default: `auth.uid()`]
   name text [not null]
@@ -28,15 +18,10 @@ Table users {
   indexes {
     id [pk] // patch: include name
   }
+
+  Note: 'A user of the platform'
 }
 
-// Represents a user's association with a team.
-// Users may not belong to more than one team (enforced by pk).
-// RLS rules:
-// - Allow users to DELETE their own entry
-// - Allow the 'manage_users' role to INSERT or DELETE users from their team
-// Hooks:
-// - post-INSERT: DELETE relevant request from team_requests
 Table team_users {
   user_id uuid [not null]
   team_num smallint [not null]
@@ -47,16 +32,13 @@ Table team_users {
     user_id [pk] // patch: include team_num
     (team_num, user_id) [unique]
   }
+
+  Note: 'A user\'s association with a team'
 }
 Ref: team_users.user_id > users.id [delete: cascade]
 Ref: team_users.team_num > teams.number [delete: cascade]
 Ref: team_users.added_by > users.id [delete: set null]
 
-// RLS rules:
-// - Allow users to SELECT, INSERT, or DELETE their own requests
-// - Allow the 'manage_team' role to SELECT or DELETE requests for their team
-// Checks:
-// - ensure user does not belong to a team
 Table team_requests {
   user_id uuid [not null, default: `auth.uid()`]
   team_num smallint [not null]
@@ -66,17 +48,12 @@ Table team_requests {
     user_id [pk]
     (team_num, requested_at) // patch: include user_id
   }
+
+  Note: 'A user\'s request to join a team'
 }
 Ref: team_requests.user_id > users.id [delete: cascade]
 Ref: team_requests.team_num > teams.number [delete: cascade]
 
-// RLS rules:
-// - Allow users to SELECT their own disable entry
-//   - to see who disabled them
-// - Allow the 'manage_team' role to SELECT or DELETE disables for their team
-// Checks:
-// - ensure user has a team
-// - ensure user's team matches disabler's team
 Table disabled_users {
   user_id uuid [not null]
   disabled_by uuid [not null, default: `auth.uid()`]
@@ -86,26 +63,12 @@ Table disabled_users {
     user_id [pk]
     (disabled_by, disabled_at)
   }
+
+  Note: 'A user whose privileges have been temporarily revoked'
 }
 Ref: disabled_users.user_id > users.id [delete: cascade]
 Ref: disabled_users.disabled_by > users.id [delete: cascade]
 
-// Users will be given one or more permissions, detailing their levels of access
-// Types:
-//   scout_match
-//     Submit match scouting data
-//   scout_pit
-//     Submit pit scouting data
-//   scout_drive_team
-//     Submit drive team scouting data
-//   review_submissions
-//     Review submissions for validity
-//       Flagged by auditing?
-//   manage_team
-//     Invite, disable, and delete team members
-//     Edit team properties
-// RLS rules:
-// - Allow any user to SELECT anything
 Table permission_types {
   id citext [not null]
   name text [not null]
@@ -114,6 +77,8 @@ Table permission_types {
   indexes {
     id [pk]
   }
+
+  Note: 'Types of permissions users may hold'
 }
 
 // RLS rules:
@@ -129,6 +94,8 @@ Table permissions {
     (user_id, permission_type) [pk]
     (granted_by, granted_at)
   }
+
+  Note: 'A user\'s permission'
 }
 Ref: permissions.user_id > users.id [delete: cascade]
 Ref: permissions.permission_type > permission_types.id [delete: cascade]

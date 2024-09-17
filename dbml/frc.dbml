@@ -1,5 +1,3 @@
-// RLS: all of these should only allow all users to SELECT
-
 Table frc_seasons {
   year smallint [not null]
   name text [not null]
@@ -10,7 +8,7 @@ Table frc_seasons {
     year [pk]
   }
 
-  Note: 'An FRC season, one per year'
+  Note: 'A competition season with a unique game'
 }
 
 Table frc_districts {
@@ -23,17 +21,20 @@ Table frc_districts {
     (season, code) [pk]
   }
 
-  Note: 'An FRC district, one per year'
+  Note: 'A district designation for a particular season'
 }
 Ref: frc_districts.season > frc_seasons.year [delete: cascade]
 
-Enum frc_event_type {
-  none // None
-  off_season // OffSeason, OffSeasonWithAzureSync
-  regional // Regional
-  district // DistrictEvent
-  district_championship // DistrictChampionship, DistrictChampionshipWithLevels, DistrictChampionshipDivision
-  championship // ChampionshipSubdivision, ChampionshipDivision, Championship
+Table frc_event_types {
+  id citext [not null]
+  name text [not null]
+  frc_equivalents text[] [not null]
+
+  indexes {
+    id [pk]
+  }
+
+  Note: 'A type of competition event'
 }
 
 Table frc_events {
@@ -55,6 +56,8 @@ Table frc_events {
   indexes {
     (season, code) [pk]
   }
+
+  Note: 'An event or competition'
 }
 Ref: frc_events.season > frc_seasons.year [delete: cascade]
 Ref: frc_events.(season, district_code) > frc_districts.(season, code) [delete: set null]
@@ -77,6 +80,8 @@ Table frc_teams {
     (season, number) [pk]
     (number, season) [unique]
   }
+
+  Note: 'A team competing in a particular season'
 }
 Ref: frc_teams.season > frc_seasons.year [delete: cascade]
 Ref: frc_teams.(season, district_code) > frc_districts.(season, code) [delete: set null]
@@ -91,6 +96,8 @@ Table frc_event_teams {
     (season, event_code, team_num) [pk]
     (team_num, season, event_code) [unique]
   }
+
+  Note: 'A team competing in an event'
 }
 Ref: frc_event_teams.(season, event_code) > frc_events.(season, code) [delete: cascade]
 Ref: frc_event_teams.(season, team_num) > frc_teams.(season, number) [delete: cascade]
@@ -103,6 +110,8 @@ Table frc_match_levels {
     id [pk]
     name [unique] // patch: include id
   }
+
+  Note: 'A level of competition for matches'
 }
 
 Table frc_matches {
@@ -122,6 +131,8 @@ Table frc_matches {
     key [pk]
     (season, event_code, level, set, number) [unique]
   }
+
+  Note: 'A match at an event'
 }
 Ref: frc_matches.(season, event_code) > frc_events.(season, code) [delete: cascade]
 Ref: frc_matches.level > frc_match_levels.id [delete: restrict]
@@ -140,6 +151,8 @@ Table frc_match_teams {
   indexes {
     (match_key, team_num) [pk]
   }
+
+  Note: 'A team competing in a match'
 }
 Ref: frc_match_teams.match_key > frc_matches.key [delete: cascade]
 // Cannot create f_key to frc_teams without season, but that gets messy
@@ -157,5 +170,7 @@ Table frc_match_results {
   indexes {
     match_key [pk]
   }
+
+  Note: 'The official results from the FMS for a match'
 }
 Ref: frc_match_results.match_key > frc_matches.key
