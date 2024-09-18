@@ -1,4 +1,6 @@
-CREATE FUNCTION last_modified_frc() RETURNS TRIGGER AS $$
+CREATE FUNCTION last_modified_frc() RETURNS TRIGGER
+SET search_path TO ''
+AS $$
 BEGIN
   NEW.modified_at := now();
   RETURN NEW;

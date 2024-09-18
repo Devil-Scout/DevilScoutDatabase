@@ -1,11 +1,12 @@
 -- submissions
 CREATE FUNCTION insert_submissions() RETURNS TRIGGER
+SET search_path TO ''
 AS $$
 DECLARE
-  category categories%ROWTYPE;
+  category public.categories%ROWTYPE;
 BEGIN
   SELECT * INTO category
-  FROM categories
+  FROM public.categories
   WHERE id = NEW.category;
 
   IF (NEW.match_key IS NULL) AND (category.has_match) THEN
@@ -32,23 +33,24 @@ FOR EACH ROW EXECUTE PROCEDURE
 
 -- submission_data
 CREATE FUNCTION insert_submission_data() RETURNS TRIGGER
+SET search_path TO ''
 AS $$
 DECLARE
-  question questions%ROWTYPE;
-  submission submissions%ROWTYPE;
+  question public.questions%ROWTYPE;
+  submission public.submissions%ROWTYPE;
 BEGIN
   SELECT * INTO question
-  FROM questions
+  FROM public.questions
   WHERE id = NEW.question_id;
   SELECT * INTO submission
-  FROM submissions
+  FROM public.submissions
   WHERE id = NEW.submission_id;
 
   IF submission.category <> category.category THEN
     RAISE EXCEPTION 'invalid question category for submission';
   END IF;
 
-  IF submission.season <> (SELECT season FROM question_sections WHERE id = question.section_id) THEN
+  IF submission.season <> (SELECT season FROM public.question_sections WHERE id = question.section_id) THEN
     RAISE EXCEPTION 'invalid question season for submission';
   END IF;
 
