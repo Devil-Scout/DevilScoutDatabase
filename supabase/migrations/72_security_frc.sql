@@ -22,28 +22,12 @@ CREATE POLICY "Anyone can SELECT anything"
 ON frc_events FOR SELECT TO authenticated
 USING (true);
 
--- frc_district_events -----------------------
-ALTER TABLE frc_district_events ENABLE ROW LEVEL SECURITY;
-GRANT SELECT ON TABLE frc_district_events TO authenticated;
-
-CREATE POLICY "Anyone can SELECT anything"
-ON frc_district_events FOR SELECT TO authenticated
-USING (true);
-
 -- frc_teams -----------------------
 ALTER TABLE frc_teams ENABLE ROW LEVEL SECURITY;
 GRANT SELECT ON TABLE frc_teams TO authenticated;
 
 CREATE POLICY "Anyone can SELECT anything"
 ON frc_teams FOR SELECT TO authenticated
-USING (true);
-
--- frc_district_teams -----------------------
-ALTER TABLE frc_district_teams ENABLE ROW LEVEL SECURITY;
-GRANT SELECT ON TABLE frc_district_teams TO authenticated;
-
-CREATE POLICY "Anyone can SELECT anything"
-ON frc_district_teams FOR SELECT TO authenticated
 USING (true);
 
 -- frc_event_teams -----------------------

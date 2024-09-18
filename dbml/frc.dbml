@@ -2,10 +2,11 @@ Table frc_seasons {
   year smallint [not null]
   name text [not null]
   team_count smallint [not null]
-  last_modified timestamptz [not null]
+  modified_at timestamptz [not null]
 
   indexes {
     year [pk]
+    modified_at
   }
 
   Note: 'A competition season with a unique game'
@@ -15,10 +16,11 @@ Table frc_districts {
   season smallint [not null]
   code citext [not null]
   name text [not null]
-  last_modified timestamptz [not null]
+  modified_at timestamptz [not null]
 
   indexes {
     (season, code) [pk]
+    modified_at
   }
 
   Note: 'A district designation for a particular season'
@@ -40,7 +42,7 @@ Table frc_event_types {
 Table frc_events {
   season smallint [not null]
   code citext [not null]
-  type frc_event_type [not null]
+  type citext [not null]
   name text [not null]
   venue text [not null]
   address text [not null]
@@ -51,15 +53,23 @@ Table frc_events {
   end_date date [not null]
   district_code citext
   website text
-  last_modified timestamptz [not null]
+  modified_at timestamptz [not null]
 
   indexes {
     (season, code) [pk]
+    (season, type, code)
+    (season, name)
+    (season, country, province)
+    (season, start_date, end_date)
+    (season, district_code)
+    type
+    modified_at
   }
 
   Note: 'An event or competition'
 }
 Ref: frc_events.season > frc_seasons.year [delete: cascade]
+Ref: frc_events.type > frc_event_types.id [delete: restrict]
 Ref: frc_events.(season, district_code) > frc_districts.(season, code) [delete: set null]
 
 Table frc_teams {
@@ -74,11 +84,16 @@ Table frc_teams {
   country text [not null]
   district_code citext
   website text
-  last_modified timestamptz [not null]
+  modified_at timestamptz [not null]
 
   indexes {
     (season, number) [pk]
     (number, season) [unique]
+    (season, name)
+    (season, rookie_season)
+    (season, country, province)
+    (season, district_code)
+    modified_at
   }
 
   Note: 'A team competing in a particular season'
@@ -90,11 +105,13 @@ Table frc_event_teams {
   season smallint [not null]
   event_code citext [not null]
   team_num smallint [not null]
-  last_modified timestamptz [not null]
+  modified_at timestamptz [not null]
 
   indexes {
     (season, event_code, team_num) [pk]
     (team_num, season, event_code) [unique]
+    (season, team_num)
+    modified_at
   }
 
   Note: 'A team competing in an event'
@@ -108,7 +125,7 @@ Table frc_match_levels {
 
   indexes {
     id [pk]
-    name [unique] // patch: include id
+    name [unique]
   }
 
   Note: 'A level of competition for matches'
@@ -124,12 +141,15 @@ Table frc_matches {
   set smallint [not null]
   number smallint [not null]
   name text [not null]
-  scheduled_time timestamp [not null] // api returns local time
-  last_modified timestamptz [not null]
+  scheduled_for timestamp [not null] // api returns local time
+  modified_at timestamptz [not null]
 
   indexes {
     key [pk]
     (season, event_code, level, set, number) [unique]
+    (season, event_code, scheduled_for)
+    modified_at
+    level
   }
 
   Note: 'A match at an event'
@@ -146,10 +166,12 @@ Table frc_match_teams {
   match_key citext [not null]
   team_num smallint [not null]
   alliance frc_alliance [not null]
-  last_modified timestamptz [not null]
+  modified_at timestamptz [not null]
 
   indexes {
     (match_key, team_num) [pk]
+    (team_num, match_key)
+    modified_at
   }
 
   Note: 'A team competing in a match'
@@ -163,12 +185,14 @@ Table frc_match_results {
   blue_score smallint [not null]
   red_breakdown jsonb [not null]
   blue_breakdown jsonb [not null]
-  actual_time timestamp [not null]
+  finished_at timestamp [not null]
   video_url text
-  last_modified timestamptz [not null]
+  modified_at timestamptz [not null]
 
   indexes {
     match_key [pk]
+    modified_at
+    finished_at
   }
 
   Note: 'The official results from the FMS for a match'

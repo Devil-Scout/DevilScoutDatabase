@@ -30,6 +30,11 @@ CREATE POLICY "Anyone can SELECT, INSERT, or UPDATE themself"
 ON users TO authenticated
 USING (
   id = (SELECT auth.uid())
+)
+WITH CHECK (
+  -- Controlled by BEFORE INSERT
+  -- id = (SELECT auth.uid())
+  true
 );
 
 -- team_users --------------------------
@@ -55,9 +60,19 @@ WITH CHECK (
   AND
   (SELECT is_not_disabled())
   AND
-  team_num = (SELECT get_team_num())
+  (
+    SELECT
+      team_requests.team_num
+    FROM
+      team_requests
+    WHERE team_requests.user_id = team_users.user_id
+  ) = (SELECT get_team_num())
   AND
-  team_users.added_by = (SELECT auth.uid())
+  -- Controlled by BEFORE INSERT trigger
+  -- team_num = (SELECT get_team_num())
+  -- AND
+  -- team_users.added_by = (SELECT auth.uid())
+  true
 );
 
 -- team_requests -----------------------
@@ -70,9 +85,12 @@ USING (
   user_id = (SELECT auth.uid())
 )
 WITH CHECK(
+  -- Can only join a team if you aren't on a team
   (SELECT get_team_num() IS NULL)
   AND
-  user_id = (SELECT auth.uid())
+  -- Controlled by BEFORE INSERT trigger
+  -- user_id = (SELECT auth.uid())
+  true
 );
 
 CREATE POLICY "'manage_team' can SELECT requests"
@@ -142,6 +160,13 @@ USING (
 CREATE POLICY "'manage_team' can SELECT, INSERT, or DELETE permissions"
 ON permissions TO authenticated
 USING (
+  (SELECT has_permission('manage_team'))
+  AND
+  (SELECT is_not_disabled())
+  AND
+  is_user_on_same_team(permissions.user_id)
+)
+WITH CHECK (
   (SELECT has_permission('manage_team'))
   AND
   (SELECT is_not_disabled())

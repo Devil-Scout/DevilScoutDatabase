@@ -22,11 +22,11 @@ Table categories {
 }
 
 Table question_sections {
-  id uuid [not null, default: `gen_random_uuid()`]
+  id uuid [not null]
   season smallint [not null]
   category citext [not null]
   index smallint [not null]
-  heading text [not null]
+  name text [not null]
 
   indexes {
     id [pk]
@@ -38,7 +38,7 @@ Table question_sections {
 Ref: question_sections.category > categories.id [delete: restrict]
 
 Table questions {
-  id uuid [not null, default: `gen_random_uuid()`]
+  id uuid [not null]
   section_id uuid [not null]
   index smallint [not null]
   prompt text [not null]
@@ -56,15 +56,15 @@ Ref: questions.section_id > question_sections.id
 Ref: questions.type > question_types.id [delete: restrict]
 
 Table submissions {
-  id uuid [not null, default: `gen_random_uuid()`]
+  id uuid [not null]
   category citext [not null]
   season smallint [not null]
   event_code citext [not null]
   match_key citext
   team_num smallint [not null]
-  scouted_by uuid [default: `auth.uid()`]
+  scouted_by uuid
   scouted_for smallint
-  created_at timestamptz [not null, default: `now()`]
+  created_at timestamptz [not null]
 
   indexes {
     id [pk]

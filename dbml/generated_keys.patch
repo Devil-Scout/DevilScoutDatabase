@@ -1,53 +1,4 @@
 Adds key generation logic where needed
-@@ -0,6 +0,12 @@
-   'playoff'
- );
-
-+CREATE OR REPLACE FUNCTION
-+frc_match_level_2_text(frc_match_level) RETURNS TEXT
-+SET search_path = ''
-+AS $$ SELECT $1 $$
-+STRICT IMMUTABLE LANGUAGE SQL;
-+
- CREATE TYPE "frc_alliance" AS ENUM (
-   'red',
-   'blue'
-@@ -0,7 +0,10 @@
- );
-
- CREATE TABLE "frc_districts" (
--  "key" citext NOT NULL,
-+  "key" citext NOT NULL
-+    GENERATED ALWAYS AS
-+      (season || code)
-+      STORED,
-   "season" smallint NOT NULL,
-   "code" citext NOT NULL,
-   "name" text NOT NULL
-@@ -0,7 +0,10 @@
- );
-
- CREATE TABLE "frc_events" (
--  "key" citext NOT NULL,
-+  "key" citext NOT NULL
-+    GENERATED ALWAYS AS
-+      (season || code)
-+      STORED,
-   "season" smallint NOT NULL,
-   "code" citext NOT NULL,
-   "type" frc_event_type,
-@@ -0,7 +0,10 @@
- );
-
- CREATE TABLE "frc_teams" (
--  "key" citext NOT NULL,
-+  "key" citext NOT NULL
-+    GENERATED ALWAYS AS
-+      (season || '_' || number)
-+      STORED,
-   "season" smallint NOT NULL,
-   "number" smallint NOT NULL,
-   "name" text NOT NULL,
 @@ -0,7 +0,10 @@
  );
 
@@ -55,8 +6,8 @@ Adds key generation logic where needed
 -  "key" citext NOT NULL,
 +  "key" citext NOT NULL
 +    GENERATED ALWAYS AS
-+      (event_key || '_' || frc_match_level_2_text(level) || 's' || set || 'm' || number)
++      (season || event_code || '_' || level || 's' || set || 'm' || number)
 +      STORED,
-   "event_key" citext NOT NULL,
+   "season" smallint NOT NULL,
+   "event_code" citext NOT NULL,
    "level" citext NOT NULL,
-   "set" smallint NOT NULL,

@@ -1,22 +1,22 @@
 Table teams {
   number smallint [not null]
   name text [not null]
-  created_at timestamptz [not null, default: `now()`]
+  created_at timestamptz [not null]
 
   indexes {
-    number [pk] // patch: include name
+    number [pk] // patch: include (name)
   }
 
   Note: 'A team utilizing the platform'
 }
 
 Table users {
-  id uuid [not null, default: `auth.uid()`]
+  id uuid [not null]
   name text [not null]
-  created_at timestamptz [not null, default: `now()`]
+  created_at timestamptz [not null]
 
   indexes {
-    id [pk] // patch: include name
+    id [pk] // patch: include (name)
   }
 
   Note: 'A user of the platform'
@@ -25,12 +25,14 @@ Table users {
 Table team_users {
   user_id uuid [not null]
   team_num smallint [not null]
-  added_by uuid [default: `auth.uid()`]
-  joined_at timestamptz [not null, default: `now()`]
+  added_by uuid
+  added_at timestamptz [not null]
 
   indexes {
-    user_id [pk] // patch: include team_num
+    user_id [pk] // patch: include (team_num)
     (team_num, user_id) [unique]
+    (team_num, added_at)
+    added_by
   }
 
   Note: 'A user\'s association with a team'
@@ -40,13 +42,13 @@ Ref: team_users.team_num > teams.number [delete: cascade]
 Ref: team_users.added_by > users.id [delete: set null]
 
 Table team_requests {
-  user_id uuid [not null, default: `auth.uid()`]
+  user_id uuid [not null]
   team_num smallint [not null]
-  requested_at timestamptz [not null, default: `now()`]
+  requested_at timestamptz [not null]
 
   indexes {
     user_id [pk]
-    (team_num, requested_at) // patch: include user_id
+    (team_num, requested_at) // patch: include (user_id)
   }
 
   Note: 'A user\'s request to join a team'
@@ -56,12 +58,12 @@ Ref: team_requests.team_num > teams.number [delete: cascade]
 
 Table disabled_users {
   user_id uuid [not null]
-  disabled_by uuid [not null, default: `auth.uid()`]
-  disabled_at timestamptz [not null, default: `now()`]
+  disabled_by uuid [not null]
+  disabled_at timestamptz [not null]
 
   indexes {
     user_id [pk]
-    (disabled_by, disabled_at)
+    disabled_by
   }
 
   Note: 'A user whose privileges have been temporarily revoked'
@@ -81,14 +83,11 @@ Table permission_types {
   Note: 'Types of permissions users may hold'
 }
 
-// RLS rules:
-// - Allow users to SELECT their own permissions
-// - Allow users with 'manage_team' role to INSERT or DELETE their team's permissions
 Table permissions {
   user_id uuid [not null]
   permission_type citext [not null]
-  granted_by uuid [default: `auth.uid()`]
-  granted_at timestamptz [default: `now()`]
+  granted_by uuid
+  granted_at timestamptz [not null]
 
   indexes {
     (user_id, permission_type) [pk]
