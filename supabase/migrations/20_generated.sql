@@ -34,7 +34,7 @@ CREATE TABLE "team_requests" (
   "user_id" uuid NOT NULL,
   "team_num" smallint NOT NULL,
   "requested_at" timestamptz NOT NULL,
-  PRIMARY KEY ("user_id") INCLUDE (team_num, requested_at)
+  PRIMARY KEY ("user_id")
 );
 
 CREATE TABLE "disabled_users" (
@@ -231,6 +231,8 @@ CREATE INDEX ON "disabled_users" ("disabled_by");
 
 CREATE INDEX ON "permissions" ("granted_by", "granted_at");
 
+CREATE INDEX ON "permissions" ("permission_type");
+
 CREATE INDEX ON "frc_seasons" ("modified_at");
 
 CREATE INDEX ON "frc_districts" ("modified_at");
@@ -286,6 +288,26 @@ CREATE INDEX ON "frc_match_results" ("modified_at");
 CREATE INDEX ON "frc_match_results" ("finished_at");
 
 CREATE UNIQUE INDEX ON "question_sections" ("season", "category", "index");
+
+CREATE INDEX ON "question_sections" ("category");
+
+CREATE INDEX ON "questions" ("section_id");
+
+CREATE INDEX ON "questions" ("type");
+
+CREATE INDEX ON "submissions" ("category");
+
+CREATE INDEX ON "submissions" ("season", "event_code");
+
+CREATE INDEX ON "submissions" ("match_key");
+
+CREATE INDEX ON "submissions" ("season", "team_num");
+
+CREATE INDEX ON "submissions" ("scouted_by");
+
+CREATE INDEX ON "submissions" ("scouted_for");
+
+CREATE INDEX ON "submission_data" ("question_id");
 
 COMMENT ON TABLE "teams" IS 'A team utilizing the platform';
 

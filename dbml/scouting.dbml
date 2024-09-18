@@ -31,6 +31,7 @@ Table question_sections {
   indexes {
     id [pk]
     (season, category, index) [unique]
+    category
   }
 
   Note: 'A section within a set of scouting questions'
@@ -48,6 +49,8 @@ Table questions {
 
   indexes {
     id [pk]
+    section_id
+    type
   }
 
   Note: 'A scouting question that users must answer'
@@ -68,6 +71,12 @@ Table submissions {
 
   indexes {
     id [pk]
+    category
+    (season, event_code)
+    match_key
+    (season, team_num)
+    scouted_by
+    scouted_for
   }
 
   Note: 'A scouting data submission'
@@ -87,6 +96,7 @@ Table submission_data {
 
   indexes {
     (submission_id, question_id) [pk]
+    question_id
   }
 
   Note: 'A submission\'s scouting data'

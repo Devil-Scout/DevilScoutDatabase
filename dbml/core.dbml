@@ -92,6 +92,7 @@ Table permissions {
   indexes {
     (user_id, permission_type) [pk]
     (granted_by, granted_at)
+    permission_type
   }
 
   Note: 'A user\'s permission'
