@@ -8,6 +8,12 @@ CREATE TYPE "frc_alliance" AS ENUM (
   'blue'
 );
 
+CREATE TYPE "data_type" AS ENUM (
+  'boolean',
+  'int',
+  'text'
+);
+
 CREATE TABLE "teams" (
   "number" smallint NOT NULL,
   "name" text NOT NULL,
@@ -54,6 +60,7 @@ CREATE TABLE "permission_types" (
 CREATE TABLE "permissions" (
   "user_id" uuid NOT NULL,
   "permission_type" citext NOT NULL,
+  "team_num" smallint NOT NULL,
   "granted_by" uuid,
   "granted_at" timestamptz NOT NULL,
   PRIMARY KEY ("user_id", "permission_type")
@@ -116,6 +123,13 @@ CREATE TABLE "frc_teams" (
   PRIMARY KEY ("season", "number")
 );
 
+CREATE TABLE "frc_team_avatars" (
+  "season" smallint NOT NULL,
+  "team_num" smallint NOT NULL,
+  "data_base64" text NOT NULL,
+  PRIMARY KEY ("season", "team_num")
+);
+
 CREATE TABLE "frc_event_teams" (
   "season" smallint NOT NULL,
   "event_code" citext NOT NULL,
@@ -169,7 +183,7 @@ CREATE TABLE "frc_match_results" (
 CREATE TABLE "question_types" (
   "id" citext NOT NULL,
   "name" text NOT NULL,
-  "description" text NOT NULL,
+  "type" data_type NOT NULL,
   PRIMARY KEY ("id")
 );
 
@@ -215,8 +229,35 @@ CREATE TABLE "submissions" (
 CREATE TABLE "submission_data" (
   "submission_id" uuid NOT NULL,
   "question_id" uuid NOT NULL,
-  "value" text NOT NULL,
+  "value_bool" boolean,
+  "value_int" bigint,
+  "value_text" text[],
   PRIMARY KEY ("submission_id", "question_id")
+);
+
+CREATE TABLE "pick_lists" (
+  "id" uuid NOT NULL,
+  "team_num" smallint NOT NULL,
+  "name" text NOT NULL,
+  "season" smallint NOT NULL,
+  "event_code" citext NOT NULL,
+  "created_at" timestamptz NOT NULL,
+  PRIMARY KEY ("id")
+);
+
+CREATE TABLE "pick_list_teams" (
+  "list_id" uuid NOT NULL,
+  "team_num" smallint NOT NULL,
+  "parent" smallint,
+  "added_at" timestamptz NOT NULL,
+  PRIMARY KEY ("list_id", "team_num")
+);
+
+CREATE TABLE "pick_list_shares" (
+  "list_id" uuid NOT NULL,
+  "shared_with" smallint NOT NULL,
+  "shared_at" timestamptz NOT NULL,
+  PRIMARY KEY ("list_id", "shared_with")
 );
 
 CREATE UNIQUE INDEX ON "team_users" ("team_num", "user_id");
@@ -229,13 +270,17 @@ CREATE INDEX ON "team_requests" ("team_num", "requested_at") INCLUDE (user_id);
 
 CREATE INDEX ON "disabled_users" ("disabled_by");
 
-CREATE INDEX ON "permissions" ("granted_by", "granted_at");
+CREATE INDEX ON "permissions" ("permission_type", "team_num");
 
-CREATE INDEX ON "permissions" ("permission_type");
+CREATE INDEX ON "permissions" ("user_id", "team_num");
+
+CREATE INDEX ON "permissions" ("granted_by", "team_num");
 
 CREATE INDEX ON "frc_seasons" ("modified_at");
 
 CREATE INDEX ON "frc_districts" ("modified_at");
+
+CREATE INDEX ON "frc_event_types" USING GIN ("frc_equivalents");
 
 CREATE INDEX ON "frc_events" ("season", "type", "code");
 
@@ -262,6 +307,8 @@ CREATE INDEX ON "frc_teams" ("season", "country", "province");
 CREATE INDEX ON "frc_teams" ("season", "district_code");
 
 CREATE INDEX ON "frc_teams" ("modified_at");
+
+CREATE UNIQUE INDEX ON "frc_team_avatars" ("team_num", "season");
 
 CREATE UNIQUE INDEX ON "frc_event_teams" ("team_num", "season", "event_code");
 
@@ -307,7 +354,13 @@ CREATE INDEX ON "submissions" ("scouted_by");
 
 CREATE INDEX ON "submissions" ("scouted_for");
 
-CREATE INDEX ON "submission_data" ("question_id");
+CREATE INDEX ON "pick_lists" ("season", "event_code");
+
+CREATE INDEX ON "pick_lists" ("team_num", "season", "event_code");
+
+CREATE INDEX ON "pick_list_teams" ("list_id", "parent");
+
+CREATE INDEX ON "pick_list_shares" ("shared_with");
 
 COMMENT ON TABLE "teams" IS 'A team utilizing the platform';
 
@@ -332,6 +385,8 @@ COMMENT ON TABLE "frc_event_types" IS 'A type of competition event';
 COMMENT ON TABLE "frc_events" IS 'An event or competition';
 
 COMMENT ON TABLE "frc_teams" IS 'A team competing in a particular season';
+
+COMMENT ON TABLE "frc_team_avatars" IS 'A team''s avatar, a 40x40 PNG, as displayed to the audience';
 
 COMMENT ON TABLE "frc_event_teams" IS 'A team competing in an event';
 
@@ -371,9 +426,13 @@ ALTER TABLE "disabled_users" ADD FOREIGN KEY ("disabled_by") REFERENCES "users" 
 
 ALTER TABLE "permissions" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE;
 
-ALTER TABLE "permissions" ADD FOREIGN KEY ("permission_type") REFERENCES "permission_types" ("id") ON DELETE CASCADE;
+ALTER TABLE "permissions" ADD FOREIGN KEY ("user_id", "team_num") REFERENCES "team_users" ("user_id", "team_num") ON DELETE CASCADE;
 
 ALTER TABLE "permissions" ADD FOREIGN KEY ("granted_by") REFERENCES "users" ("id") ON DELETE SET NULL;
+
+ALTER TABLE "permissions" ADD FOREIGN KEY ("granted_by", "team_num") REFERENCES "team_users" ("user_id", "team_num") ON DELETE CASCADE;
+
+ALTER TABLE "permissions" ADD FOREIGN KEY ("permission_type") REFERENCES "permission_types" ("id") ON DELETE CASCADE;
 
 ALTER TABLE "frc_districts" ADD FOREIGN KEY ("season") REFERENCES "frc_seasons" ("year") ON DELETE CASCADE;
 
@@ -386,6 +445,8 @@ ALTER TABLE "frc_events" ADD FOREIGN KEY ("season", "district_code") REFERENCES 
 ALTER TABLE "frc_teams" ADD FOREIGN KEY ("season") REFERENCES "frc_seasons" ("year") ON DELETE CASCADE;
 
 ALTER TABLE "frc_teams" ADD FOREIGN KEY ("season", "district_code") REFERENCES "frc_districts" ("season", "code") ON DELETE SET NULL;
+
+ALTER TABLE "frc_team_avatars" ADD FOREIGN KEY ("season", "team_num") REFERENCES "frc_teams" ("season", "number") ON DELETE CASCADE;
 
 ALTER TABLE "frc_event_teams" ADD FOREIGN KEY ("season", "event_code") REFERENCES "frc_events" ("season", "code") ON DELETE CASCADE;
 
@@ -422,3 +483,15 @@ ALTER TABLE "submissions" ADD FOREIGN KEY ("scouted_for") REFERENCES "teams" ("n
 ALTER TABLE "submission_data" ADD FOREIGN KEY ("submission_id") REFERENCES "submissions" ("id") ON DELETE CASCADE;
 
 ALTER TABLE "submission_data" ADD FOREIGN KEY ("question_id") REFERENCES "questions" ("id") ON DELETE RESTRICT;
+
+ALTER TABLE "pick_lists" ADD FOREIGN KEY ("team_num") REFERENCES "teams" ("number") ON DELETE CASCADE;
+
+ALTER TABLE "pick_lists" ADD FOREIGN KEY ("season", "event_code") REFERENCES "frc_events" ("season", "code") ON DELETE RESTRICT;
+
+ALTER TABLE "pick_list_teams" ADD FOREIGN KEY ("list_id") REFERENCES "pick_lists" ("id");
+
+ALTER TABLE "pick_list_teams" ADD FOREIGN KEY ("list_id", "parent") REFERENCES "pick_list_teams" ("list_id", "team_num") ON DELETE CASCADE;
+
+ALTER TABLE "pick_list_shares" ADD FOREIGN KEY ("list_id") REFERENCES "pick_lists" ("id") ON DELETE CASCADE;
+
+ALTER TABLE "pick_list_shares" ADD FOREIGN KEY ("shared_with") REFERENCES "teams" ("number") ON DELETE CASCADE;
