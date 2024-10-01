@@ -21,6 +21,12 @@ VALUES
     'scout.drive_team',
     'Drive Team Scouting',
    E'- Submit drive team scouting data'
+  ),
+  (
+    'pick_lists',
+    'Pick Lists',
+   E'- Create, edit, and delete pick lists'
+    '- Manage sharing lists with other teams'
   );
 
 INSERT INTO
