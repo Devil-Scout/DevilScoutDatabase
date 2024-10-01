@@ -114,3 +114,47 @@ Table submission_data {
 }
 Ref: submission_data.submission_id > submissions.id [delete: cascade]
 Ref: submission_data.question_id > questions.id [delete: restrict]
+
+Table pick_lists {
+  id uuid [not null]
+  team_num smallint [not null]
+  name text [not null]
+  season smallint [not null]
+  event_code citext [not null]
+  created_at timestamptz [not null]
+
+  indexes {
+    id [pk]
+    (season, event_code)
+    (team_num, season, event_code)
+  }
+}
+Ref: pick_lists.team_num > teams.number [delete: cascade]
+Ref: pick_lists.(season, event_code) > frc_events.(season, code) [delete: restrict]
+
+Table pick_list_teams {
+  list_id uuid [not null]
+  team_num smallint [not null]
+  parent smallint
+  added_at timestamptz [not null]
+
+  indexes {
+    (list_id, team_num) [pk]
+    (list_id, parent)
+  }
+}
+Ref: pick_list_teams.list_id > pick_lists.id
+Ref: pick_list_teams.(list_id, parent) > pick_list_teams.(list_id, team_num) [delete: cascade]
+
+Table pick_list_shares {
+  list_id uuid [not null]
+  shared_with smallint [not null]
+  shared_at timestamptz [not null]
+
+  indexes {
+    (list_id, shared_with) [pk]
+    shared_with
+  }
+}
+Ref: pick_list_shares.list_id > pick_lists.id [delete: cascade]
+Ref: pick_list_shares.shared_with > teams.number [delete: cascade]
