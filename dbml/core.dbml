@@ -86,17 +86,21 @@ Table permission_types {
 Table permissions {
   user_id uuid [not null]
   permission_type citext [not null]
+  team_num smallint [not null]
   granted_by uuid
   granted_at timestamptz [not null]
 
   indexes {
     (user_id, permission_type) [pk]
-    (granted_by, granted_at)
-    permission_type
+    (permission_type, team_num)
+    (user_id, team_num)
+    (granted_by, team_num)
   }
 
   Note: 'A user\'s permission'
 }
 Ref: permissions.user_id > users.id [delete: cascade]
-Ref: permissions.permission_type > permission_types.id [delete: cascade]
+Ref: permissions.(user_id, team_num) > team_users.(user_id, team_num) [delete: cascade]
 Ref: permissions.granted_by > users.id [delete: set null]
+Ref: permissions.(granted_by, team_num) > team_users.(user_id, team_num) [delete: cascade]
+Ref: permissions.permission_type > permission_types.id [delete: cascade]
