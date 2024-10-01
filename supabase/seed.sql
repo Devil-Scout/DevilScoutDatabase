@@ -54,9 +54,10 @@ VALUES
   ('01234567-89ab-cdef-0123-456789abcdef', 1559);
 
 INSERT INTO
-  permissions (user_id, permission_type)
+  permissions (user_id, team_num, permission_type)
 VALUES
   (
     '01234567-89ab-cdef-0123-456789abcdef',
+    1559,
     'manage_team'
   );
