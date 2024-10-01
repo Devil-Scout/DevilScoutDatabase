@@ -34,6 +34,7 @@ Table frc_event_types {
 
   indexes {
     id [pk]
+    frc_equivalents [type: gin]
   }
 
   Note: 'A type of competition event'
