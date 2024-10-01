@@ -102,6 +102,20 @@ Table frc_teams {
 Ref: frc_teams.season > frc_seasons.year [delete: cascade]
 Ref: frc_teams.(season, district_code) > frc_districts.(season, code) [delete: set null]
 
+Table frc_team_avatars {
+  season smallint [not null]
+  team_num smallint [not null]
+  data_base64 text [not null]
+
+  indexes {
+    (season, team_num) [pk]
+    (team_num, season) [unique]
+  }
+
+  Note: 'A team\'s avatar, a 40x40 PNG, as displayed to the audience'
+}
+Ref: frc_team_avatars.(season, team_num) > frc_teams.(season, number) [delete: cascade]
+
 Table frc_event_teams {
   season smallint [not null]
   event_code citext [not null]
