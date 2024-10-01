@@ -36,22 +36,53 @@ CREATE FUNCTION insert_submission_data() RETURNS TRIGGER
 SET search_path TO ''
 AS $$
 DECLARE
-  question public.questions%ROWTYPE;
   submission public.submissions%ROWTYPE;
+  question public.questions%ROWTYPE;
+  question_section public.question_sections%ROWTYPE;
+  data_type public.data_type;
 BEGIN
-  SELECT * INTO question
-  FROM public.questions
-  WHERE id = NEW.question_id;
   SELECT * INTO submission
   FROM public.submissions
   WHERE id = NEW.submission_id;
 
-  IF submission.category <> category.category THEN
+  SELECT * INTO question
+  FROM public.questions
+  WHERE id = NEW.question_id;
+
+  SELECT * INTO question_section
+  FROM public.question_sections
+  WHERE id = question.section_id;
+
+  SELECT type INTO data_type
+  FROM public.question_types
+  WHERE id = question.type;
+
+  -- ensure question is permitted in this submission
+
+  IF submission.season != question_section.season THEN
+    RAISE EXCEPTION 'invalid question season for submission';
+  END IF;
+
+  IF submission.category != question_section.category THEN
     RAISE EXCEPTION 'invalid question category for submission';
   END IF;
 
-  IF submission.season <> (SELECT season FROM public.question_sections WHERE id = question.section_id) THEN
-    RAISE EXCEPTION 'invalid question season for submission';
+  -- Ensure the correct value type was entered
+
+  IF (
+    SELECT COUNT(*)
+    FROM (
+      VALUES (NEW.value_bool, NEW.value_int, NEW.value_text)
+    ) AS v(col)
+    WHERE v.col IS NOT NULL
+  ) != 1 THEN
+    RAISE EXCEPTION 'exactly one value type is required';
+  END IF;
+
+  IF (NEW.value_bool IS NULL AND data_type = 'boolean') OR
+      (NEW.value_int IS NULL AND data_type = 'int') OR
+      (NEW.value_text IS NULL AND data_type = 'text') THEN
+    RAISE EXCEPTION 'incorrect value type for question';
   END IF;
 
   -- Logic to verify valid values
