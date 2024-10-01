@@ -1,7 +1,13 @@
+Enum data_type {
+  boolean
+  int
+  text
+}
+
 Table question_types {
   id citext [not null]
   name text [not null]
-  description text [not null]
+  type data_type [not null]
 
   indexes {
     id [pk]
@@ -92,11 +98,16 @@ Ref: submissions.scouted_for > teams.number [delete: set null]
 Table submission_data {
   submission_id uuid [not null]
   question_id uuid [not null]
-  value text [not null]
+  value_bool boolean
+  value_int bigint
+  value_text text[]
 
   indexes {
     (submission_id, question_id) [pk]
-    question_id
+    // for querying data (not allowed in dbml):
+    // - (question_id, value_bool) WHERE value_bool IS NOT NULL
+    // - (question_id, value_int) WHERE value_int IS NOT NULL
+    // - (question_id, value_text) [type: gin] WHERE value_text IS NOT NULL
   }
 
   Note: 'A submission\'s scouting data'
