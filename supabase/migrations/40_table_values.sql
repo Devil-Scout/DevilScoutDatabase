@@ -35,3 +35,14 @@ VALUES
   ('match', TRUE),
   ('pit', FALSE),
   ('drive_team', TRUE);
+
+INSERT INTO
+  question_types (id, name, type)
+VALUES
+  ('toggle', 'Toggle', 'boolean'),
+  ('counter', 'Counter', 'int'),
+  ('number', 'Number Input', 'int'),
+  ('range', 'Range', 'int'),
+  ('checkboxes', 'Checkboxes', 'text'),
+  ('dropdown', 'Dropdown', 'text'),
+  ('radio', 'Radio', 'text');
