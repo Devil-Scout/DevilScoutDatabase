@@ -46,3 +46,24 @@ VALUES
   ('checkboxes', 'Checkboxes', 'text'),
   ('dropdown', 'Dropdown', 'text'),
   ('radio', 'Radio', 'text');
+
+INSERT INTO frc_event_types
+  (id, name, frc_equivalents)
+VALUES
+  ('none', 'None', ARRAY['None']),
+  ('reg', 'Regional', ARRAY['Regional']),
+  ('dist', 'District Event', ARRAY['DistrictEvent']),
+  ('dist_chmp', 'District Championship', ARRAY[
+    'DistrictChampionship',
+    'DistrictChampionshipWithLevels',
+    'DistrictChampionshipDivision'
+  ]),
+  ('chmp', 'Championship', ARRAY[
+    'ChampionshipSubdivision',
+    'ChampionshipDivision',
+    'Championship'
+  ]),
+  ('off', 'Off-Season', ARRAY[
+    'OffSeason',
+    'OffSeasonWithAzureSync'
+  ]);
