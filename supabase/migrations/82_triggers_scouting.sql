@@ -1,6 +1,5 @@
 -- submissions
 CREATE FUNCTION insert_submissions() RETURNS TRIGGER
-SET search_path TO ''
 AS $$
 DECLARE
   category public.categories%ROWTYPE;
@@ -33,7 +32,6 @@ FOR EACH ROW EXECUTE PROCEDURE
 
 -- submission_data
 CREATE FUNCTION insert_submission_data() RETURNS TRIGGER
-SET search_path TO ''
 AS $$
 DECLARE
   submission public.submissions%ROWTYPE;

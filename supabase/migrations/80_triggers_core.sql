@@ -7,7 +7,6 @@
 
 -- teams
 CREATE FUNCTION insert_team() RETURNS TRIGGER
-SET search_path TO ''
 AS $$
 BEGIN
   NEW.created_at := now();
@@ -26,7 +25,6 @@ FOR EACH ROW EXECUTE PROCEDURE
 
 -- users
 CREATE FUNCTION insert_user() RETURNS TRIGGER
-SET search_path TO ''
 AS $$
 BEGIN
   NEW.id := COALESCE(auth.uid(), NEW.id);
@@ -46,7 +44,6 @@ FOR EACH ROW EXECUTE PROCEDURE
 
 -- team_users
 CREATE FUNCTION insert_team_users() RETURNS TRIGGER
-SET search_path TO ''
 AS $$
 BEGIN
   NEW.added_by := COALESCE(auth.uid(), NEW.added_by);
@@ -66,7 +63,6 @@ FOR EACH ROW EXECUTE PROCEDURE
 
 -- team_requests
 CREATE FUNCTION insert_team_requests() RETURNS TRIGGER
-SET search_path TO ''
 AS $$
 BEGIN
   NEW.user_id := COALESCE(auth.uid(), NEW.user_id);
@@ -86,7 +82,6 @@ FOR EACH ROW EXECUTE PROCEDURE
 
 -- disabled_users
 CREATE FUNCTION insert_disabled_users() RETURNS TRIGGER
-SET search_path TO ''
 AS $$
 BEGIN
   NEW.disabled_by := COALESCE(auth.uid(), NEW.disabled_by);
@@ -106,7 +101,6 @@ FOR EACH ROW EXECUTE PROCEDURE
 
 -- permissions
 CREATE FUNCTION insert_permissions() RETURNS TRIGGER
-SET search_path TO ''
 AS $$
 BEGIN
   NEW.granted_by := COALESCE(auth.uid(), NEW.granted_by);
