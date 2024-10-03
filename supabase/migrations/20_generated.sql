@@ -68,8 +68,7 @@ CREATE TABLE "permissions" (
 
 CREATE TABLE "frc_seasons" (
   "year" smallint NOT NULL,
-  "name" text NOT NULL,
-  "team_count" smallint NOT NULL,
+  "name" text,
   "modified_at" timestamptz NOT NULL,
   PRIMARY KEY ("year")
 );
@@ -126,7 +125,7 @@ CREATE TABLE "frc_teams" (
 CREATE TABLE "frc_team_avatars" (
   "season" smallint NOT NULL,
   "team_num" smallint NOT NULL,
-  "data_base64" text NOT NULL,
+  "data_png" bytea NOT NULL,
   PRIMARY KEY ("season", "team_num")
 );
 
@@ -172,10 +171,16 @@ CREATE TABLE "frc_match_results" (
   "match_key" citext NOT NULL,
   "red_score" smallint NOT NULL,
   "blue_score" smallint NOT NULL,
-  "red_breakdown" jsonb NOT NULL,
-  "blue_breakdown" jsonb NOT NULL,
   "finished_at" timestamp NOT NULL,
   "video_url" text,
+  "modified_at" timestamptz NOT NULL,
+  PRIMARY KEY ("match_key")
+);
+
+CREATE TABLE "frc_score_breakdowns" (
+  "match_key" citext NOT NULL,
+  "red_breakdown" jsonb NOT NULL,
+  "blue_breakdown" jsonb NOT NULL,
   "modified_at" timestamptz NOT NULL,
   PRIMARY KEY ("match_key")
 );
@@ -334,6 +339,8 @@ CREATE INDEX ON "frc_match_results" ("modified_at");
 
 CREATE INDEX ON "frc_match_results" ("finished_at");
 
+CREATE INDEX ON "frc_score_breakdowns" ("modified_at");
+
 CREATE UNIQUE INDEX ON "question_sections" ("season", "category", "index");
 
 CREATE INDEX ON "question_sections" ("category");
@@ -396,7 +403,9 @@ COMMENT ON TABLE "frc_matches" IS 'A match at an event';
 
 COMMENT ON TABLE "frc_match_teams" IS 'A team competing in a match';
 
-COMMENT ON TABLE "frc_match_results" IS 'The official results from the FMS for a match';
+COMMENT ON TABLE "frc_match_results" IS 'An official match result from the FMS';
+
+COMMENT ON TABLE "frc_score_breakdowns" IS 'An official match breakdown (season-dependent) from the FMS';
 
 COMMENT ON TABLE "question_types" IS 'A type of scouting question shown to the user';
 
@@ -409,6 +418,12 @@ COMMENT ON TABLE "questions" IS 'A scouting question that users must answer';
 COMMENT ON TABLE "submissions" IS 'A scouting data submission';
 
 COMMENT ON TABLE "submission_data" IS 'A submission''s scouting data';
+
+COMMENT ON TABLE "pick_lists" IS 'A list of teams that might be selected for a playoff alliance';
+
+COMMENT ON TABLE "pick_list_teams" IS 'A team on a pick list';
+
+COMMENT ON TABLE "pick_list_shares" IS 'A team a pick list is shared with';
 
 ALTER TABLE "team_users" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE;
 
@@ -458,7 +473,9 @@ ALTER TABLE "frc_matches" ADD FOREIGN KEY ("level") REFERENCES "frc_match_levels
 
 ALTER TABLE "frc_match_teams" ADD FOREIGN KEY ("match_key") REFERENCES "frc_matches" ("key") ON DELETE CASCADE;
 
-ALTER TABLE "frc_match_results" ADD FOREIGN KEY ("match_key") REFERENCES "frc_matches" ("key");
+ALTER TABLE "frc_match_results" ADD FOREIGN KEY ("match_key") REFERENCES "frc_matches" ("key") ON DELETE CASCADE;
+
+ALTER TABLE "frc_score_breakdowns" ADD FOREIGN KEY ("match_key") REFERENCES "frc_matches" ("key") ON DELETE CASCADE;
 
 ALTER TABLE "question_sections" ADD FOREIGN KEY ("category") REFERENCES "categories" ("id") ON DELETE RESTRICT;
 

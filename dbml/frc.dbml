@@ -1,7 +1,6 @@
 Table frc_seasons {
   year smallint [not null]
-  name text [not null]
-  team_count smallint [not null]
+  name text
   modified_at timestamptz [not null]
 
   indexes {
@@ -105,7 +104,7 @@ Ref: frc_teams.(season, district_code) > frc_districts.(season, code) [delete: s
 Table frc_team_avatars {
   season smallint [not null]
   team_num smallint [not null]
-  data_base64 text [not null]
+  data_png bytea [not null]
 
   indexes {
     (season, team_num) [pk]
@@ -198,8 +197,6 @@ Table frc_match_results {
   match_key citext [not null]
   red_score smallint [not null]
   blue_score smallint [not null]
-  red_breakdown jsonb [not null]
-  blue_breakdown jsonb [not null]
   finished_at timestamp [not null]
   video_url text
   modified_at timestamptz [not null]
@@ -210,6 +207,21 @@ Table frc_match_results {
     finished_at
   }
 
-  Note: 'The official results from the FMS for a match'
+  Note: 'An official match result from the FMS'
 }
-Ref: frc_match_results.match_key > frc_matches.key
+Ref: frc_match_results.match_key > frc_matches.key [delete: cascade]
+
+Table frc_score_breakdowns {
+  match_key citext [not null]
+  red_breakdown jsonb [not null]
+  blue_breakdown jsonb [not null]
+  modified_at timestamptz [not null]
+
+  indexes {
+    match_key [pk]
+    modified_at
+  }
+
+  Note: 'An official match breakdown (season-dependent) from the FMS'
+}
+Ref: frc_score_breakdowns.match_key > frc_matches.key [delete: cascade]

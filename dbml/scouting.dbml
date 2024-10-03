@@ -128,6 +128,8 @@ Table pick_lists {
     (season, event_code)
     (team_num, season, event_code)
   }
+
+  Note: 'A list of teams that might be selected for a playoff alliance'
 }
 Ref: pick_lists.team_num > teams.number [delete: cascade]
 Ref: pick_lists.(season, event_code) > frc_events.(season, code) [delete: restrict]
@@ -142,6 +144,8 @@ Table pick_list_teams {
     (list_id, team_num) [pk]
     (list_id, parent)
   }
+
+  Note: 'A team on a pick list'
 }
 Ref: pick_list_teams.list_id > pick_lists.id
 Ref: pick_list_teams.(list_id, parent) > pick_list_teams.(list_id, team_num) [delete: cascade]
@@ -155,6 +159,8 @@ Table pick_list_shares {
     (list_id, shared_with) [pk]
     shared_with
   }
+
+  Note: 'A team a pick list is shared with'
 }
 Ref: pick_list_shares.list_id > pick_lists.id [delete: cascade]
 Ref: pick_list_shares.shared_with > teams.number [delete: cascade]
