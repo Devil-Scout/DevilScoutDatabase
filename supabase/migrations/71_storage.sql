@@ -14,8 +14,7 @@ VALUES
     (1 * 1024 * 1024),
     '{ "text/markdown" }'
   )
-ON CONFLICT (id) DO
-UPDATE
+ON CONFLICT (id) DO UPDATE
 SET
   name = EXCLUDED.name,
   public = EXCLUDED.public,

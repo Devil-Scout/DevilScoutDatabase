@@ -1,5 +1,4 @@
 -- teams -------------------------------
-ALTER TABLE teams ENABLE ROW LEVEL SECURITY;
 GRANT SELECT, UPDATE(name) ON TABLE teams TO authenticated;
 
 CREATE POLICY "Anyone can SELECT any team"
@@ -17,7 +16,6 @@ USING (
 );
 
 -- users -------------------------------
-ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 GRANT SELECT, INSERT(name), UPDATE(name) ON TABLE users TO authenticated;
 
 CREATE POLICY "Anyone can SELECT their team's members"
@@ -38,7 +36,6 @@ WITH CHECK (
 );
 
 -- team_users --------------------------
-ALTER TABLE team_users ENABLE ROW LEVEL SECURITY;
 GRANT SELECT, DELETE, INSERT (user_id, team_num) ON TABLE team_users TO authenticated;
 
 CREATE POLICY "Team members can SELECT each other"
@@ -76,7 +73,6 @@ WITH CHECK (
 );
 
 -- team_requests -----------------------
-ALTER TABLE team_requests ENABLE ROW LEVEL SECURITY;
 GRANT SELECT, DELETE, INSERT(team_num) ON TABLE team_requests TO public, anon, authenticated;
 
 CREATE POLICY "Anyone can SELECT, INSERT, or DELETE their request"
@@ -114,7 +110,6 @@ USING (
 );
 
 -- disabled_users ----------------------
-ALTER TABLE disabled_users ENABLE ROW LEVEL SECURITY;
 GRANT SELECT, DELETE, INSERT(user_id) ON TABLE disabled_users TO authenticated;
 
 CREATE POLICY "Anyone can SELECT their own entry"
@@ -131,7 +126,8 @@ USING (
   (SELECT is_not_disabled())
   AND
   is_user_on_same_team(disabled_users.user_id)
-) WITH CHECK (
+)
+WITH CHECK (
   (SELECT has_permission('manage_team'))
   AND
   (SELECT is_not_disabled())
@@ -140,7 +136,6 @@ USING (
 );
 
 -- permission_types --------------------
-ALTER TABLE permission_types ENABLE ROW LEVEL SECURITY;
 GRANT SELECT ON TABLE permission_types TO authenticated;
 
 CREATE POLICY "Anyone can SELECT any permission type"
@@ -148,8 +143,7 @@ ON permission_types FOR SELECT TO authenticated
 USING (true);
 
 -- permissions -------------------------
-ALTER TABLE permissions ENABLE ROW LEVEL SECURITY;
-GRANT SELECT, DELETE, INSERT(user_id, permission_type) ON TABLE permissions TO authenticated;
+GRANT SELECT, DELETE, INSERT(user_id, type) ON TABLE permissions TO authenticated;
 
 CREATE POLICY "Anyone can SELECT their own permissions"
 ON permissions FOR SELECT TO authenticated

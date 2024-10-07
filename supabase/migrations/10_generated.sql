@@ -61,11 +61,11 @@ CREATE TABLE "permission_types" (
 
 CREATE TABLE "permissions" (
   "user_id" uuid NOT NULL,
-  "permission_type" citext NOT NULL,
+  "type" citext NOT NULL,
   "team_num" smallint NOT NULL,
   "granted_by" uuid,
   "granted_at" timestamptz NOT NULL,
-  PRIMARY KEY ("user_id", "permission_type")
+  PRIMARY KEY ("user_id", "type")
 );
 
 CREATE TABLE "frc_seasons" (
@@ -256,7 +256,7 @@ CREATE INDEX ON "team_requests" ("team_num", "requested_at") INCLUDE (user_id);
 
 CREATE INDEX ON "disabled_users" ("disabled_by");
 
-CREATE INDEX ON "permissions" ("permission_type", "team_num");
+CREATE INDEX ON "permissions" ("type", "team_num");
 
 CREATE INDEX ON "permissions" ("user_id", "team_num");
 
@@ -406,7 +406,7 @@ ALTER TABLE "permissions" ADD FOREIGN KEY ("granted_by") REFERENCES "users" ("id
 
 ALTER TABLE "permissions" ADD FOREIGN KEY ("granted_by", "team_num") REFERENCES "team_users" ("user_id", "team_num") ON DELETE CASCADE;
 
-ALTER TABLE "permissions" ADD FOREIGN KEY ("permission_type") REFERENCES "permission_types" ("id") ON DELETE CASCADE;
+ALTER TABLE "permissions" ADD FOREIGN KEY ("type") REFERENCES "permission_types" ("id") ON DELETE CASCADE;
 
 ALTER TABLE "frc_districts" ADD FOREIGN KEY ("season") REFERENCES "frc_seasons" ("year") ON DELETE CASCADE;
 

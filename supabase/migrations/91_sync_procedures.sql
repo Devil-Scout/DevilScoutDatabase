@@ -15,8 +15,6 @@ $$ LANGUAGE sql STABLE;
 CREATE OR REPLACE PROCEDURE sync.events(year smallint)
 AS $$
 DECLARE
-  api_url CONSTANT text = 'https://thebluealliance.com/api/v3/';
-  api_auth CONSTANT jsonb := sync.tba_api_auth();
   request_id bigint;
 BEGIN
   -- Request all events for the given year

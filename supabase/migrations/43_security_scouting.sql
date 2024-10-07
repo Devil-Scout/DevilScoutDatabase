@@ -1,5 +1,4 @@
 -- question_types
-ALTER TABLE question_types ENABLE ROW LEVEL SECURITY;
 GRANT SELECT ON TABLE question_types TO authenticated;
 
 CREATE POLICY "Anyone can SELECT anything"
@@ -7,7 +6,6 @@ ON question_types FOR SELECT TO authenticated
 USING (true);
 
 -- categories
-ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
 GRANT SELECT ON TABLE categories TO authenticated;
 
 CREATE POLICY "Anyone can SELECT anything"
@@ -15,7 +13,6 @@ ON categories FOR SELECT TO authenticated
 USING (true);
 
 -- question_sections
-ALTER TABLE question_sections ENABLE ROW LEVEL SECURITY;
 GRANT SELECT ON TABLE question_sections TO authenticated;
 
 CREATE POLICY "Anyone can SELECT anything"
@@ -23,7 +20,6 @@ ON question_sections FOR SELECT TO authenticated
 USING (true);
 
 -- questions
-ALTER TABLE questions ENABLE ROW LEVEL SECURITY;
 GRANT SELECT ON TABLE questions TO authenticated;
 
 CREATE POLICY "Anyone can SELECT anything"
@@ -31,7 +27,6 @@ ON questions FOR SELECT TO authenticated
 USING (true);
 
 -- submissions
-ALTER TABLE submissions ENABLE ROW LEVEL SECURITY;
 GRANT SELECT, INSERT (category, event_key, match_key, season, team_num, scouted_for) ON TABLE submissions TO authenticated;
 
 CREATE POLICY "Anyone can SELECT anything"
@@ -47,7 +42,6 @@ WITH CHECK (
 );
 
 -- submission_data
-ALTER TABLE submission_data ENABLE ROW LEVEL SECURITY;
 GRANT SELECT, INSERT ON TABLE submission_data TO authenticated;
 
 CREATE POLICY "Anyone can SELECT anything"
