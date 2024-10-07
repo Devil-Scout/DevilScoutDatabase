@@ -1,20 +1,72 @@
-CREATE SCHEMA sync;
+CREATE EXTENSION IF NOT EXISTS pg_net WITH SCHEMA extensions;
 
-CREATE FUNCTION sync.frc_api_auth()
+CREATE FUNCTION sync.jsonb_merge_nullable(a jsonb, b jsonb)
+RETURNS jsonb
+AS $$
+  SELECT COALESCE(a || b, a, b);
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE FUNCTION sync.etag_header(endpoint text)
 RETURNS jsonb STRICT
 AS $$
+  SELECT
+    concat(
+      '{ "If-None-Match": "',
+      replace(value, '"', '\"'),
+      '" }'
+    )::jsonb
+  FROM sync.etags
+  WHERE
+    etags.endpoint = endpoint AND
+    etags.value IS NOT NULL;
+$$ LANGUAGE sql STABLE;
+
+CREATE FUNCTION sync.tba_api_auth()
+RETURNS jsonb
+AS $$
   SELECT concat(
-    '{ "Authorization": "Basic ',
+    '{ "X-TBA-Auth-Key": "',
     (
       SELECT
         decrypted_secret
       FROM vault.decrypted_secrets
       WHERE
-        name = 'frc_api_auth'
+        name = 'tba_api_key'
     ),
     '" }'
   )::jsonb;
 $$ LANGUAGE sql STABLE;
+
+CREATE FUNCTION sync.tba_request(endpoint text)
+RETURNS bigint STRICT
+AS $$
+  SELECT net.http_get(
+      url := concat('https://www.thebluealliance.com/api/v3', endpoint),
+      headers := sync.jsonb_merge_nullable(
+        sync.tba_api_auth(),
+        sync.etag_header(endpoint)
+      )
+    )
+$$ LANGUAGE sql;
+
+CREATE FUNCTION sync.write_etag(endpoint text, request_id bigint)
+RETURNS VOID
+AS $$
+  INSERT INTO sync.etags
+    (endpoint, value)
+  VALUES
+    (
+      endpoint,
+      (
+        SELECT headers->>'etag'
+        FROM net._http_response
+        WHERE id = request_id
+      )
+    )
+  ON CONFLICT (endpoint) DO UPDATE
+  SET
+    value = EXCLUDED.value;
+$$ LANGUAGE sql;
 
 CREATE FUNCTION sync.current_year()
 RETURNS smallint STRICT
@@ -75,28 +127,3 @@ BEGIN
   END LOOP;
 END;
 $$ LANGUAGE plpgsql;
-
--- Returns all known events that are "currently running":
--- - current year's game
--- - within one day of the event's dates
-CREATE FUNCTION sync.current_event_codes ()
-RETURNS TABLE (
-  season smallint,
-  event_code citext
-)
-AS $$
-DECLARE
-  current_season CONSTANT smallint := sync.current_year();
-BEGIN
-  RETURN QUERY (
-    SELECT
-      event.season,
-      event.code
-    FROM frc_events event
-    WHERE
-      event.season = current_season AND
-      now() >= (event.start_date - INTERVAL '1 day') AND
-      now() <= (event.end_date + INTERVAL '1 day')
-  );
-END;
-$$ LANGUAGE plpgsql STABLE;

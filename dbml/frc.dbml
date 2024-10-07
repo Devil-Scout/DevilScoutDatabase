@@ -1,6 +1,19 @@
+Table sync.etags {
+  endpoint text [not null]
+  value text [not null]
+  modified_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (endpoint) [pk]
+  }
+
+  Note: 'A TBA ETag to reduce traffic'
+}
+
+// Manually populated
 Table frc_seasons {
   year smallint [not null]
-  name text
+  game_name text [not null]
   modified_at timestamptz [not null]
 
   indexes {
@@ -12,13 +25,15 @@ Table frc_seasons {
 }
 
 Table frc_districts {
+  key citext [not null]
   season smallint [not null]
   code citext [not null]
   name text [not null]
   modified_at timestamptz [not null]
 
   indexes {
-    (season, code) [pk]
+    key [pk]
+    (season, code) [unique]
     modified_at
   }
 
@@ -26,113 +41,117 @@ Table frc_districts {
 }
 Ref: frc_districts.season > frc_seasons.year [delete: cascade]
 
+// Manually populated
 Table frc_event_types {
-  id citext [not null]
+  id smallint [not null]
+  is_district boolean [not null]
+  is_championship boolean [not null]
+  is_division boolean [not null]
+  is_offseason boolean [not null]
   name text [not null]
-  frc_equivalents text[] [not null]
+  name_short text [not null]
 
   indexes {
     id [pk]
-    frc_equivalents [type: gin]
   }
 
   Note: 'A type of competition event'
 }
 
 Table frc_events {
+  key citext [not null]
+
+  name text [not null]
+  name_short text
+
   season smallint [not null]
   code citext [not null]
-  type citext [not null]
-  name text [not null]
-  venue text [not null]
-  address text [not null]
-  city text [not null]
-  province text [not null]
-  country text [not null]
+  district_key citext
+  type smallint // -1 -> NULL
+  // worth including playoff type?
+
   start_date date [not null]
   end_date date [not null]
-  district_code citext
+  timezone text [not null]
+  week smallint
+
   website text
+
+  location text
+  address text
+  city text
+  province text
+  country text
+  postal_code citext
+  coordinates point
+
   modified_at timestamptz [not null]
 
   indexes {
-    (season, code) [pk]
-    (season, type, code)
-    (season, name)
+    key [pk]
+    (season, code) [unique]
+    (season, type, key)
+    (season, name) // patch: include key
     (season, country, province)
     (season, start_date, end_date)
-    (season, district_code)
+    district_key
     type
     modified_at
   }
 
   Note: 'An event or competition'
 }
-Ref: frc_events.season > frc_seasons.year [delete: cascade]
+Ref: frc_events.season > frc_seasons.year [delete: restrict]
 Ref: frc_events.type > frc_event_types.id [delete: restrict]
-Ref: frc_events.(season, district_code) > frc_districts.(season, code) [delete: set null]
+Ref: frc_events.district_key > frc_districts.key [delete: set null]
 
 Table frc_teams {
-  season smallint [not null]
   number smallint [not null]
   name text [not null]
-  rookie_season smallint [not null]
-  schools text[] [not null]
   sponsors text[] [not null]
-  city text [not null]
-  province text [not null]
-  country text [not null]
-  district_code citext
+  schools text[] [not null]
+  rookie_season smallint [not null]
   website text
+
+  location text
+  address text
+  city text
+  province text
+  country text
+  postal_code text
+  coordinates point
+
   modified_at timestamptz [not null]
 
   indexes {
-    (season, number) [pk]
-    (number, season) [unique]
-    (season, name)
-    (season, rookie_season)
-    (season, country, province)
-    (season, district_code)
+    number [pk]
+    name // patch: include number
+    rookie_season // patch: include number
+    (country, province, city)
     modified_at
   }
 
   Note: 'A team competing in a particular season'
 }
-Ref: frc_teams.season > frc_seasons.year [delete: cascade]
-Ref: frc_teams.(season, district_code) > frc_districts.(season, code) [delete: set null]
-
-Table frc_team_avatars {
-  season smallint [not null]
-  team_num smallint [not null]
-  data_png bytea [not null]
-
-  indexes {
-    (season, team_num) [pk]
-    (team_num, season) [unique]
-  }
-
-  Note: 'A team\'s avatar, a 40x40 PNG, as displayed to the audience'
-}
-Ref: frc_team_avatars.(season, team_num) > frc_teams.(season, number) [delete: cascade]
+// Ref: frc_teams.rookie_season > frc_seasons.year [delete: restrict] // requires all past seasons
 
 Table frc_event_teams {
-  season smallint [not null]
-  event_code citext [not null]
   team_num smallint [not null]
+  event_key citext [not null]
   modified_at timestamptz [not null]
 
   indexes {
-    (season, event_code, team_num) [pk]
-    (team_num, season, event_code) [unique]
-    (season, team_num)
+    (event_key, team_num) [pk]
+    (team_num, event_key) [unique] // filter by season using LIKE
     modified_at
   }
 
   Note: 'A team competing in an event'
 }
-Ref: frc_event_teams.(season, event_code) > frc_events.(season, code) [delete: cascade]
-Ref: frc_event_teams.(season, team_num) > frc_teams.(season, number) [delete: cascade]
+Ref: frc_event_teams.event_key > frc_events.key [delete: cascade]
+Ref: frc_event_teams.team_num > frc_teams.number [delete: cascade]
 
+// Manually populated
 Table frc_match_levels {
   id citext [not null]
   name citext [not null]
@@ -146,29 +165,31 @@ Table frc_match_levels {
 }
 
 Table frc_matches {
-  // It's not practical to reference a 6-column pk from other tables
-  // Solution: generate a concatenated pk
-  key citext [not null] // patch: generated stored
-  season smallint [not null]
-  event_code citext [not null]
+  key citext [not null]
+  event_key citext [not null]
   level citext [not null]
   set smallint [not null]
   number smallint [not null]
-  name text [not null]
-  scheduled_for timestamp [not null] // api returns local time
+
+  scheduled_time timestamptz
+  predicted_time timestamptz
+  actual_time timestamptz
+
   modified_at timestamptz [not null]
 
   indexes {
     key [pk]
-    (season, event_code, level, set, number) [unique]
-    (season, event_code, scheduled_for)
+    (event_key, level, set, number) [unique]
+    (event_key, scheduled_time)
+    (event_key, predicted_time)
+    (event_key, actual_time)
     modified_at
     level
   }
 
   Note: 'A match at an event'
 }
-Ref: frc_matches.(season, event_code) > frc_events.(season, code) [delete: cascade]
+Ref: frc_matches.event_key > frc_events.key [delete: cascade]
 Ref: frc_matches.level > frc_match_levels.id [delete: restrict]
 
 Enum frc_alliance {
@@ -180,48 +201,35 @@ Table frc_match_teams {
   match_key citext [not null]
   team_num smallint [not null]
   alliance frc_alliance [not null]
+  is_surrogate boolean [not null]
+  is_disqualified boolean [not null]
   modified_at timestamptz [not null]
 
   indexes {
     (match_key, team_num) [pk]
-    (team_num, match_key)
+    (team_num, match_key) // filter by event using LIKE
     modified_at
   }
 
   Note: 'A team competing in a match'
 }
 Ref: frc_match_teams.match_key > frc_matches.key [delete: cascade]
-// Cannot create f_key to frc_teams without season, but that gets messy
+Ref: frc_match_teams.team_num > frc_teams.number [delete: cascade]
 
 Table frc_match_results {
   match_key citext [not null]
   red_score smallint [not null]
   blue_score smallint [not null]
-  finished_at timestamp [not null]
-  video_url text
+  videos text[] [not null]
+  red_breakdown jsonb
+  blue_breakdown jsonb
   modified_at timestamptz [not null]
 
   indexes {
     match_key [pk]
     modified_at
-    finished_at
   }
 
   Note: 'An official match result from the FMS'
 }
 Ref: frc_match_results.match_key > frc_matches.key [delete: cascade]
-
-Table frc_score_breakdowns {
-  match_key citext [not null]
-  red_breakdown jsonb [not null]
-  blue_breakdown jsonb [not null]
-  modified_at timestamptz [not null]
-
-  indexes {
-    match_key [pk]
-    modified_at
-  }
-
-  Note: 'An official match breakdown (season-dependent) from the FMS'
-}
-Ref: frc_score_breakdowns.match_key > frc_matches.key [delete: cascade]

@@ -1,63 +1,68 @@
--- Required to begin synchronizing
--- Names will be null until
-INSERT INTO frc_seasons (year)
-SELECT *
-FROM generate_series(2006, 2025);
+CREATE EXTENSION IF NOT EXISTS pg_cron WITH SCHEMA extensions;
+GRANT USAGE ON SCHEMA cron TO postgres;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA cron TO postgres;
 
--- FRC Synchronization jobs
--- make sure to use Last-Modified and FMS-OnlyModifiedSince headers
--- to only return modifications
--- also, the api has an odd caching bug when changing headers. Add a random query param to avoid.
+-- TBA Synchronization jobs
+-- - Daily/weekly jobs run at 6am GMT (1am EST, 10pm PST)
+--    - Optimal for FRC competitions in North America (the vast majority)
+--    - International competitions will likely see slightly degraded performance
+-- - Use ETag and If-None-Match headers to reduce traffic
 
--- Every 5 minutes:
--- - in our db, search for events that are currently running:
---   - event is in the current (maximum) season
---   - current date is in the range [(start - 1 day) to (end + 1 day)]
--- - for each of these events (bulk update):
---   - sync match schedules (1 transaction)
---     - practice
---     - qual
---     - playoff
---   - sync match results (1 transaction)
---     - qual
---     - playoff
---   - sync score details (1 transaction)
---     - qual
---     - playoff
---   - sync event rankings (1 transaction)
+-- Every 5 minutes, sync:
+-- - For all current events:
+--   - List of teams
+--   - Match schedules & results
+--   - Team rankings
 SELECT cron.schedule(
-  'sync-rapid',
-  '*/5 * * * *',
+  job_name := 'sync-rapid',
+  schedule := '*/5 * * * *',
+  command :=
   $$
-  $$
-);
-
--- Every 4 hours:
--- - refresh current season events
--- Synchronize all current season data every 4 hours:
--- - season
--- - districts
--- - events
--- - teams
--- - awards
--- - etc
-SELECT cron.schedule (
-  'frc-sync-season',
-  '0 */4 * * *',
-  $$
+  CALL sync.events(sync.current_year());
   $$
 );
 
--- Synchronize twice per week (Sunday and Wednesday):
--- - all data from any season
--- Also, perform VACUUM ANALYZE
--- 6am GMT (1am EST, 10pm PST) is optimal for the majority of
--- FRC competitions (which tend to take place in North America)
-SELECT cron.schedule (
-  'frc-sync-all',
-  '0 6 * * *',
-  $$
-  CALL sync.seasons();
-  VACUUM ANALYZE;
-  $$
-);
+-- Once per day, sync:
+-- - For this season only:
+--   - All districts
+--   - All events
+--   - All teams
+--   - For all non-current events:
+--     - List of teams
+--     - Match schedules & results
+--     - Team rankings
+--   - For all events:
+--     - Awards
+-- SELECT cron.schedule (
+--   'sync-season',
+--   '0 6 * * *',
+--   $$
+--   $$
+-- );
+
+-- Once per week on Mondays, sync:
+-- - For all non-current seasons:
+--   - All districts
+--   - All events
+--   - All teams
+--   - For all events:
+--     - List of teams
+--     - Match schedules & results
+--     - Team rankings
+--     - Awards
+-- SELECT cron.schedule (
+--   'sync-archive',
+--   '0 6 * * 1',
+--   $$
+--   $$
+-- );
+
+-- Once per day, run VACUUM ANALYZE
+-- Runs an hour after daily/weekly syncs
+-- SELECT cron.schedule(
+--   'vacuum-analyze',
+--   '0 7 * * *',
+--   $$
+--   VACUUM ANALYZE;
+--   $$
+-- );

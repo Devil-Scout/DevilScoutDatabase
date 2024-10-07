@@ -32,7 +32,7 @@ USING (true);
 
 -- submissions
 ALTER TABLE submissions ENABLE ROW LEVEL SECURITY;
-GRANT SELECT, INSERT (category, event_code, match_key, season, team_num, scouted_for) ON TABLE submissions TO authenticated;
+GRANT SELECT, INSERT (category, event_key, match_key, season, team_num, scouted_for) ON TABLE submissions TO authenticated;
 
 CREATE POLICY "Anyone can SELECT anything"
 ON submissions FOR SELECT TO authenticated

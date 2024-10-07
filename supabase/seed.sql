@@ -61,3 +61,4 @@ VALUES
     1559,
     'manage_team'
   );
+

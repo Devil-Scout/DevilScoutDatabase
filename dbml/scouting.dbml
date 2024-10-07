@@ -68,7 +68,7 @@ Table submissions {
   id uuid [not null]
   category citext [not null]
   season smallint [not null]
-  event_code citext [not null]
+  event_key citext [not null]
   match_key citext
   team_num smallint [not null]
   scouted_by uuid
@@ -78,9 +78,9 @@ Table submissions {
   indexes {
     id [pk]
     category
-    (season, event_code)
+    event_key
     match_key
-    (season, team_num)
+    team_num
     scouted_by
     scouted_for
   }
@@ -88,10 +88,11 @@ Table submissions {
   Note: 'A scouting data submission'
 }
 Ref: submissions.category > categories.id [delete: restrict]
-Ref: submissions.(season, event_code) > frc_events.(season, code) [delete: restrict]
+Ref: submissions.event_key > frc_events.key [delete: restrict]
 Ref: submissions.match_key > frc_matches.key [delete: restrict]
+Ref: submissions.(match_key, team_num) > frc_match_teams.(match_key, team_num) [delete: restrict]
 Ref: submissions.season > frc_seasons.year [delete: restrict]
-Ref: submissions.(season, team_num) > frc_teams.(season, number) [delete: restrict]
+Ref: submissions.team_num > frc_teams.number [delete: restrict]
 Ref: submissions.scouted_by > users.id [delete: set null]
 Ref: submissions.scouted_for > teams.number [delete: set null]
 

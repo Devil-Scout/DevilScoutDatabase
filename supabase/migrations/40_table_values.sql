@@ -48,22 +48,30 @@ VALUES
   ('radio', 'Radio', 'text');
 
 INSERT INTO frc_event_types
-  (id, name, frc_equivalents)
+  (id, is_district, is_championship, is_division, is_offseason, name, name_short)
 VALUES
-  ('none', 'None', ARRAY['None']),
-  ('reg', 'Regional', ARRAY['Regional']),
-  ('dist', 'District Event', ARRAY['DistrictEvent']),
-  ('dist_chmp', 'District Championship', ARRAY[
-    'DistrictChampionship',
-    'DistrictChampionshipWithLevels',
-    'DistrictChampionshipDivision'
-  ]),
-  ('chmp', 'Championship', ARRAY[
-    'ChampionshipSubdivision',
-    'ChampionshipDivision',
-    'Championship'
-  ]),
-  ('off', 'Off-Season', ARRAY[
-    'OffSeason',
-    'OffSeasonWithAzureSync'
-  ]);
+  (0, FALSE, FALSE, FALSE, FALSE, 'Regional Event', 'Regional'),
+  (1, TRUE, FALSE, FALSE, FALSE, 'District Event', 'District'),
+  (2, TRUE, TRUE, FALSE, FALSE, 'District Championship', 'District Championship'),
+  (3, FALSE, TRUE, TRUE, FALSE, 'Championship Division', 'Division'),
+  (4, FALSE, TRUE, FALSE, FALSE, 'Championship Finals', 'Championship'),
+  (5, TRUE, TRUE, TRUE, FALSE, 'District Championship Division', 'District Division'),
+  (6, FALSE, FALSE, FALSE, FALSE, 'Festival of Champions', 'Festival'),
+  (7, FALSE, FALSE, FALSE, FALSE, 'Remote', 'Remote'),
+  (99, FALSE, FALSE, FALSE, TRUE, 'Offseason', 'Offseason'),
+  (100, FALSE, FALSE, FALSE, TRUE, 'Preseason', 'Preseason');
+
+INSERT INTO frc_match_levels
+  (id, name)
+VALUES
+  ('qm', 'Qualifier'),
+  ('ef', 'Elimination Final'),
+  ('qf', 'Quarterfinal'),
+  ('sf', 'Semifinal'),
+  ('f', 'Final');
+
+INSERT INTO frc_seasons
+  (year, game_name)
+VALUES
+  (2024, 'Crescendo'),
+  (2025, 'Reefscape');
