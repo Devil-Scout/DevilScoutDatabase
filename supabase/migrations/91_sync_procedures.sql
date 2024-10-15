@@ -18,11 +18,12 @@ CREATE PROCEDURE sync.events(year smallint)
 LANGUAGE plpgsql
 AS $$
 DECLARE
+  endpoint CONSTANT text := '/events/' || year;
   request_id bigint;
 BEGIN
   -- Request all events for the given year
   SELECT INTO request_id
-    sync.tba_request('/events/' || year);
+    sync.tba_request(endpoint);
 
   -- Wait for request to finish
   -- This implicitly commits
@@ -108,7 +109,7 @@ BEGIN
     postal_code = EXCLUDED.postal_code,
     coordinates = EXCLUDED.coordinates;
 
-  PERFORM sync.update_etag('/events/' || year, request_id);
+  PERFORM sync.update_etag(endpoint, request_id);
   COMMIT;
 END;
 $$;
