@@ -14,6 +14,58 @@ AS $$
   );
 $$;
 
+CREATE PROCEDURE sync.districts(year smallint)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  endpoint CONSTANT text := '/districts/' || year;
+  request_id bigint;
+BEGIN
+  -- Request all districts for the given year
+  SELECT INTO request_id
+    sync.tba_request(endpoint);
+
+  -- Wait for request to finish
+  -- This implicitly commits
+  CALL sync.await_responses(
+    request_ids := ARRAY[request_id],
+    timeout := INTERVAL '10 seconds'
+  );
+
+  -- Write results to database
+  WITH responses AS (
+    SELECT jsonb_array_elements(response.content::jsonb) AS j
+    FROM net._http_response response
+    WHERE
+      response.id = request_id AND
+      response.status_code = 200
+  ), districts AS (
+    SELECT
+      (r.j->>'key')::citext AS key,
+      (r.j->>'display_name') AS name,
+      (r.j->>'year')::smallint AS season,
+      (r.j->>'abbreviation')::citext AS code
+    FROM responses r
+  )
+  INSERT INTO frc_districts
+    (key, name, season, code)
+  SELECT
+    d.key,
+    d.name,
+    d.season,
+    d.code
+  FROM districts d
+  ON CONFLICT (key) DO UPDATE SET
+    key = EXCLUDED.key,
+    name = EXCLUDED.name,
+    season = EXCLUDED.season,
+    code = EXCLUDED.code;
+
+  PERFORM sync.update_etag(endpoint, request_id);
+  COMMIT;
+END;
+$$;
+
 CREATE PROCEDURE sync.events(year smallint)
 LANGUAGE plpgsql
 AS $$
