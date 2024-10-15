@@ -1,5 +1,7 @@
 CREATE FUNCTION sync.get_current_event_keys()
 RETURNS citext[]
+STABLE
+LANGUAGE sql
 AS $$
   SELECT ARRAY(
     SELECT
@@ -10,9 +12,10 @@ AS $$
       now() >= (event.start_date - INTERVAL '1 day') AND
       now() <= (event.end_date + INTERVAL '1 day')
   );
-$$ LANGUAGE sql STABLE;
+$$;
 
-CREATE OR REPLACE PROCEDURE sync.events(year smallint)
+CREATE PROCEDURE sync.events(year smallint)
+LANGUAGE plpgsql
 AS $$
 DECLARE
   request_id bigint;
@@ -105,7 +108,7 @@ BEGIN
     postal_code = EXCLUDED.postal_code,
     coordinates = EXCLUDED.coordinates;
 
-  PERFORM sync.write_etag('/events/' || year, request_id);
+  PERFORM sync.update_etag('/events/' || year, request_id);
   COMMIT;
 END;
-$$ LANGUAGE plpgsql;
+$$;

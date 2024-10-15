@@ -240,10 +240,10 @@ CREATE TABLE "submission_data" (
 );
 
 CREATE TABLE "sync"."etags" (
-  "endpoint" text NOT NULL,
+  "key" text NOT NULL,
   "value" text NOT NULL,
-  "modified_at" timestamptz NOT NULL DEFAULT (now()),
-  PRIMARY KEY ("endpoint")
+  "modified_at" timestamptz NOT NULL,
+  PRIMARY KEY ("key")
 );
 
 CREATE UNIQUE INDEX ON "team_users" ("team_num", "user_id");
@@ -382,7 +382,7 @@ COMMENT ON TABLE "submissions" IS 'A scouting data submission';
 
 COMMENT ON TABLE "submission_data" IS 'A submission''s scouting data';
 
-COMMENT ON TABLE "sync"."etags" IS 'A TBA ETag to reduce traffic';
+COMMENT ON TABLE "sync"."etags" IS 'A TBA ETag to reduce network traffic';
 
 ALTER TABLE "team_users" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE;
 

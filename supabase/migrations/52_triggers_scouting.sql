@@ -1,5 +1,7 @@
 -- submissions
-CREATE FUNCTION insert_submissions() RETURNS TRIGGER
+CREATE FUNCTION insert_submissions()
+RETURNS TRIGGER
+LANGUAGE plpgsql
 AS $$
 DECLARE
   category public.categories%ROWTYPE;
@@ -19,7 +21,7 @@ BEGIN
   NEW.scouted_for := COALESCE(get_team_num(), NEW.scouted_for);
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 REVOKE EXECUTE ON FUNCTION insert_submissions FROM public, anon;
 
@@ -31,7 +33,9 @@ FOR EACH ROW EXECUTE PROCEDURE
   insert_submissions();
 
 -- submission_data
-CREATE FUNCTION insert_submission_data() RETURNS TRIGGER
+CREATE FUNCTION insert_submission_data()
+RETURNS TRIGGER
+LANGUAGE plpgsql
 AS $$
 DECLARE
   submission public.submissions%ROWTYPE;
@@ -88,7 +92,7 @@ BEGIN
 
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 REVOKE EXECUTE ON FUNCTION insert_submission_data FROM public, anon;
 

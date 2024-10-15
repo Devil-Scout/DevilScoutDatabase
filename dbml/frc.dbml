@@ -1,13 +1,13 @@
 Table sync.etags {
-  endpoint text [not null]
+  key text [not null]
   value text [not null]
-  modified_at timestamptz [not null, default: `now()`]
+  modified_at timestamptz [not null]
 
   indexes {
-    (endpoint) [pk]
+    key [pk]
   }
 
-  Note: 'A TBA ETag to reduce traffic'
+  Note: 'A TBA ETag to reduce network traffic'
 }
 
 // Manually populated
