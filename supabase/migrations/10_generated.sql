@@ -124,8 +124,6 @@ CREATE TABLE "frc_teams" (
   "name" text NOT NULL,
   "rookie_season" smallint,
   "website" text,
-  "location" text,
-  "address" text,
   "city" text,
   "province" text,
   "country" text,

@@ -111,8 +111,6 @@ Table frc_teams {
   rookie_season smallint
   website text
 
-  location text
-  address text
   city text
   province text
   country text
