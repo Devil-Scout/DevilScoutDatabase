@@ -172,20 +172,20 @@ BEGIN
       is_disqualified = m.is_disqualified
   ;
 
-  DELETE FROM frc_match_teams
-  WHERE
-    (
-      SELECT event_key
-      FROM frc_matches
-      WHERE key = match_key
-    ) = ANY(event_keys) AND
-    NOT EXISTS (
-      SELECT 1
-      FROM match_teams
-      WHERE
-        match_teams.match_key = frc_match_teams.match_key AND
-        match_teams.team_num = frc_match_teams.team_num
-    );
+  -- this is broken for now
+  -- DELETE FROM frc_match_teams
+  -- WHERE
+  --   match_key IN (
+  --     SELECT DISTINCT match_key
+  --     FROM match_teams
+  --   ) AND
+  --   NOT EXISTS (
+  --     SELECT 1
+  --     FROM match_teams
+  --     WHERE
+  --       match_teams.match_key = frc_match_teams.match_key AND
+  --       match_teams.team_num = frc_match_teams.team_num
+  --   );
 
   -- INSERT INTO frc_match_teams
   -- SELECT * FROM match_teams
