@@ -87,7 +87,8 @@ BEGIN
     postal_code = EXCLUDED.postal_code,
     coordinates = EXCLUDED.coordinates;
 
-  PERFORM sync.update_etag(endpoint || page_num, request_id)
+  PERFORM
+    sync.update_etag(endpoint || page_num, request_id)
   FROM requests;
 
   DROP TABLE requests;
@@ -138,7 +139,8 @@ BEGIN
     season = EXCLUDED.season,
     code = EXCLUDED.code;
 
-  SELECT sync.update_etag(endpoint, request_id);
+  PERFORM sync.update_etag(endpoint, request_id);
+
   COMMIT;
 END;
 $$;
@@ -234,7 +236,8 @@ BEGIN
     postal_code = EXCLUDED.postal_code,
     coordinates = EXCLUDED.coordinates;
 
-  SELECT sync.update_etag(endpoint, request_id);
+  PERFORM sync.update_etag(endpoint, request_id);
+
   COMMIT;
 END;
 $$;
