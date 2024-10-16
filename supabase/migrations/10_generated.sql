@@ -122,9 +122,7 @@ CREATE TABLE "frc_events" (
 CREATE TABLE "frc_teams" (
   "number" smallint NOT NULL,
   "name" text NOT NULL,
-  "sponsors" text[] NOT NULL,
-  "schools" text[] NOT NULL,
-  "rookie_season" smallint NOT NULL,
+  "rookie_season" smallint,
   "website" text,
   "location" text,
   "address" text,

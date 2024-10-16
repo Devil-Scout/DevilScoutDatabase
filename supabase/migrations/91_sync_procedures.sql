@@ -14,6 +14,87 @@ AS $$
   );
 $$;
 
+CREATE PROCEDURE sync.teams()
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  endpoint CONSTANT text := '/teams/';
+  request_ids bigint[];
+BEGIN
+  DROP TABLE IF EXISTS requests;
+
+  CREATE TEMP TABLE requests AS
+  SELECT
+    page_num,
+    sync.tba_request(endpoint || page_num) AS request_id
+  FROM generate_series(0, 21) pages(page_num);
+
+  SELECT INTO request_ids
+  ARRAY(SELECT request_id FROM requests);
+  CALL sync.await_responses(
+    request_ids := request_ids,
+    timeout := INTERVAL '10 seconds'
+  );
+
+  WITH responses AS (
+    SELECT jsonb_array_elements(response.content::jsonb) AS j
+    FROM
+      net._http_response response
+      JOIN requests ON requests.request_id = response.id
+    WHERE
+      response.status_code = 200
+  ), teams AS (
+    SELECT
+      (r.j->>'team_number')::smallint AS number,
+      (r.j->>'nickname') AS name,
+      (r.j->>'rookie_year')::smallint AS rookie_season,
+      (r.j->>'website') AS website,
+      (r.j->>'location_name') AS location,
+      (r.j->>'address') AS address,
+      (r.j->>'city') AS city,
+      (r.j->>'state_prov') AS province,
+      (r.j->>'country') AS country,
+      (r.j->>'postal_code') AS postal_code,
+      point(
+        (r.j->>'lat')::float8,
+        (r.j->>'lng')::float8
+      ) AS coordinates
+    FROM responses r
+  )
+  INSERT INTO frc_teams
+  SELECT
+    t.number,
+    t.name,
+    t.rookie_season,
+    t.website,
+    t.location,
+    t.address,
+    t.city,
+    t.province,
+    t.country,
+    t.postal_code,
+    t.coordinates
+  FROM teams t
+  ON CONFLICT (number) DO UPDATE SET
+    name = EXCLUDED.name,
+    rookie_season = EXCLUDED.rookie_season,
+    website = EXCLUDED.website,
+    location = EXCLUDED.location,
+    address = EXCLUDED.address,
+    city = EXCLUDED.city,
+    province = EXCLUDED.province,
+    country = EXCLUDED.country,
+    postal_code = EXCLUDED.postal_code,
+    coordinates = EXCLUDED.coordinates;
+
+  PERFORM sync.update_etag(endpoint || page_num, request_id)
+  FROM requests;
+
+  DROP TABLE requests;
+  COMMIT;
+END;
+$$;
+
 CREATE PROCEDURE sync.districts(year smallint)
 LANGUAGE plpgsql
 AS $$
@@ -21,18 +102,14 @@ DECLARE
   endpoint CONSTANT text := '/districts/' || year;
   request_id bigint;
 BEGIN
-  -- Request all districts for the given year
   SELECT INTO request_id
     sync.tba_request(endpoint);
 
-  -- Wait for request to finish
-  -- This implicitly commits
   CALL sync.await_responses(
     request_ids := ARRAY[request_id],
     timeout := INTERVAL '10 seconds'
   );
 
-  -- Write results to database
   WITH responses AS (
     SELECT jsonb_array_elements(response.content::jsonb) AS j
     FROM net._http_response response
@@ -61,7 +138,7 @@ BEGIN
     season = EXCLUDED.season,
     code = EXCLUDED.code;
 
-  PERFORM sync.update_etag(endpoint, request_id);
+  SELECT sync.update_etag(endpoint, request_id);
   COMMIT;
 END;
 $$;
@@ -73,18 +150,14 @@ DECLARE
   endpoint CONSTANT text := '/events/' || year;
   request_id bigint;
 BEGIN
-  -- Request all events for the given year
   SELECT INTO request_id
     sync.tba_request(endpoint);
 
-  -- Wait for request to finish
-  -- This implicitly commits
   CALL sync.await_responses(
     request_ids := ARRAY[request_id],
     timeout := INTERVAL '10 seconds'
   );
 
-  -- Write results to database
   WITH responses AS (
     SELECT jsonb_array_elements(response.content::jsonb) AS j
     FROM net._http_response response
@@ -161,7 +234,7 @@ BEGIN
     postal_code = EXCLUDED.postal_code,
     coordinates = EXCLUDED.coordinates;
 
-  PERFORM sync.update_etag(endpoint, request_id);
+  SELECT sync.update_etag(endpoint, request_id);
   COMMIT;
 END;
 $$;

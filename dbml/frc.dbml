@@ -108,9 +108,7 @@ Ref: frc_events.district_key > frc_districts.key [delete: set null]
 Table frc_teams {
   number smallint [not null]
   name text [not null]
-  sponsors text[] [not null]
-  schools text[] [not null]
-  rookie_season smallint [not null]
+  rookie_season smallint
   website text
 
   location text
