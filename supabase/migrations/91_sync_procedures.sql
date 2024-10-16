@@ -31,10 +31,7 @@ BEGIN
 
   SELECT INTO request_ids
   ARRAY(SELECT request_id FROM requests);
-  CALL sync.await_responses(
-    request_ids := request_ids,
-    timeout := INTERVAL '10 seconds'
-  );
+  CALL sync.await_responses(request_ids);
 
   WITH responses AS (
     SELECT jsonb_array_elements(response.content::jsonb) AS j
@@ -100,10 +97,7 @@ BEGIN
   SELECT INTO request_id
     sync.tba_request(endpoint);
 
-  CALL sync.await_responses(
-    request_ids := ARRAY[request_id],
-    timeout := INTERVAL '10 seconds'
-  );
+  CALL sync.await_responses(ARRAY[request_id]);
 
   WITH responses AS (
     SELECT jsonb_array_elements(response.content::jsonb) AS j
@@ -149,10 +143,7 @@ BEGIN
   SELECT INTO request_id
     sync.tba_request(endpoint);
 
-  CALL sync.await_responses(
-    request_ids := ARRAY[request_id],
-    timeout := INTERVAL '10 seconds'
-  );
+  CALL sync.await_responses(ARRAY[request_id]);
 
   WITH responses AS (
     SELECT jsonb_array_elements(response.content::jsonb) AS j

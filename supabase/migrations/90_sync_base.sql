@@ -79,7 +79,8 @@ AS $$
       headers := sync.jsonb_merge_nullable(
         sync.tba_api_auth(),
         sync.etag_header(endpoint)
-      )
+      ),
+      timeout_milliseconds := 10000
     )
 $$;
 
@@ -92,13 +93,11 @@ AS $$
 $$;
 
 CREATE PROCEDURE sync.await_responses(
-  request_ids bigint[],
-  timeout interval
+  request_ids bigint[]
 )
 LANGUAGE plpgsql
 AS $$
 DECLARE
-  start_time CONSTANT timestamptz := now();
   response_id bigint;
 BEGIN
   DROP TABLE IF EXISTS remaining;
@@ -121,9 +120,8 @@ BEGIN
       response.error_msg IS NOT NULL OR
       NOT (response.status_code = 200 OR response.status_code = 304)
     LIMIT 1;
-
     IF response_id IS NOT NULL THEN
-      RAISE EXCEPTION 'error from request %s', response.id;
+      RAISE EXCEPTION 'error from request %', response_id;
     END IF;
 
     -- if a request returned successfully, remove it from remaining
@@ -134,11 +132,6 @@ BEGIN
     -- if there are no more requests, return successfully
     IF NOT EXISTS (SELECT 1 FROM remaining) THEN
       RETURN;
-    END IF;
-
-    -- timeout if this is taking too long
-    IF now() - start_time >= timeout THEN
-      RAISE EXCEPTION 'timeout while waiting for responses %s', array_to_string(ARRAY(SELECT id FROM remaining));
     END IF;
 
     -- wait for more responses
