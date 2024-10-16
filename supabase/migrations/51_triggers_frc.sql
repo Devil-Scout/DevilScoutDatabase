@@ -14,6 +14,7 @@ REVOKE EXECUTE ON FUNCTION last_modified_frc FROM public, anon, authenticated;
 DO $$
 DECLARE
   excluded CONSTANT text[] := ARRAY[
+    'frc_seasons',
     'frc_event_types',
     'frc_match_levels'
   ];
@@ -36,7 +37,7 @@ BEGIN
         last_modified
       BEFORE INSERT OR UPDATE ON
         %1$I
-      FOR EACH ROW EXECUTE PROCEDURE
+      FOR EACH ROW EXECUTE FUNCTION
         last_modified_frc();
       ',
       row.tablename
@@ -44,3 +45,23 @@ BEGIN
   END LOOP;
 END;
 $$;
+
+-- Auto update sync.etags timestamps
+CREATE FUNCTION sync.etags_modified_at()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  IF OLD IS NULL OR OLD.value != NEW.value THEN
+    NEW.modified_at := now();
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER
+  modified_at
+BEFORE INSERT OR UPDATE ON
+  sync.etags
+FOR EACH ROW EXECUTE FUNCTION
+  sync.etags_modified_at();

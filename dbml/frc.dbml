@@ -14,11 +14,9 @@ Table sync.etags {
 Table frc_seasons {
   year smallint [not null]
   game_name text [not null]
-  modified_at timestamptz [not null]
 
   indexes {
     year [pk]
-    modified_at
   }
 
   Note: 'A competition season with a unique game'

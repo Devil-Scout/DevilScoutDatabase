@@ -71,7 +71,6 @@ CREATE TABLE "permissions" (
 CREATE TABLE "frc_seasons" (
   "year" smallint NOT NULL,
   "game_name" text NOT NULL,
-  "modified_at" timestamptz NOT NULL,
   PRIMARY KEY ("year")
 );
 
@@ -257,8 +256,6 @@ CREATE INDEX ON "permissions" ("type", "team_num");
 CREATE INDEX ON "permissions" ("user_id", "team_num");
 
 CREATE INDEX ON "permissions" ("granted_by", "team_num");
-
-CREATE INDEX ON "frc_seasons" ("modified_at");
 
 CREATE UNIQUE INDEX ON "frc_districts" ("season", "code");
 

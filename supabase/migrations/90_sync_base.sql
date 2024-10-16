@@ -24,9 +24,9 @@ BEGIN
 
   IF etag IS NOT NULL THEN
     INSERT INTO sync.etags
-      (key, value, modified_at)
+      (key, value)
     VALUES
-      (endpoint, etag, now())
+      (endpoint, etag)
     ON CONFLICT (key) DO UPDATE
     SET
       value = EXCLUDED.value,
