@@ -41,8 +41,12 @@ AS $$
     match_key::citext,
     substring(team_key FROM '\d+$')::smallint AS team_num,
     alliance_color::frc_alliance AS alliance,
-    team_key = ANY(ARRAY(SELECT jsonb_array_elements_text(alliance->'surrogate_team_keys'))) AS is_surrogate,
-    team_key = ANY(ARRAY(SELECT jsonb_array_elements_text(alliance->'dq_team_keys'))) AS is_disqualified
+    team_key IN (
+      SELECT jsonb_array_elements_text(alliance->'surrogate_team_keys')
+    ) AS is_surrogate,
+    team_key IN (
+      SELECT jsonb_array_elements_text(alliance->'dq_team_keys')
+    ) AS is_disqualified
   FROM s;
 $$;
 
@@ -158,6 +162,7 @@ BEGIN
     m.team_num = f.team_num
   -- If entry already exists and needs to be deleted
     -- Need PG 17 for WHEN NOT MATCHED BY SOURCE
+    -- Currently handled by following DELETE clause
   -- If entry doesn't exist, insert it
   WHEN NOT MATCHED THEN
     INSERT
@@ -169,8 +174,7 @@ BEGIN
     UPDATE SET
       alliance = m.alliance,
       is_surrogate = m.is_surrogate,
-      is_disqualified = m.is_disqualified
-  ;
+      is_disqualified = m.is_disqualified;
 
   DELETE FROM frc_match_teams
   WHERE
@@ -185,14 +189,6 @@ BEGIN
         match_teams.match_key = frc_match_teams.match_key AND
         match_teams.team_num = frc_match_teams.team_num
     );
-
-  -- INSERT INTO frc_match_teams
-  -- SELECT * FROM match_teams
-  -- ON CONFLICT (match_key, team_num) DO UPDATE
-  -- SET
-  --   alliance = EXCLUDED.alliance,
-  --   is_surrogate = EXCLUDED.is_surrogate,
-  --   is_disqualified = EXCLUDED.is_disqualified;
 
   PERFORM
     sync.update_etag(
