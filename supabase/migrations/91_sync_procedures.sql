@@ -82,13 +82,13 @@ BEGIN
   -- deletes frc_matches, frc_match_results, frc_match_teams
   DELETE FROM frc_matches
   WHERE
-    event_key = ANY(event_keys) AND
-    NOT EXISTS (
-      SELECT 1
+    event_key IN (
+      SELECT (j->>'event_key')
       FROM unnest(results) r(j)
-      WHERE
-        (r.j->>'event_key') = frc_matches.event_key AND
-        (r.j->>'key') = frc_matches.key
+    ) AND
+    key NOT IN (
+      SELECT (j->>'key')
+      FROM unnest(results) r(j)
     );
 
   INSERT INTO frc_matches
@@ -172,20 +172,19 @@ BEGIN
       is_disqualified = m.is_disqualified
   ;
 
-  -- this is broken for now
-  -- DELETE FROM frc_match_teams
-  -- WHERE
-  --   match_key IN (
-  --     SELECT DISTINCT match_key
-  --     FROM match_teams
-  --   ) AND
-  --   NOT EXISTS (
-  --     SELECT 1
-  --     FROM match_teams
-  --     WHERE
-  --       match_teams.match_key = frc_match_teams.match_key AND
-  --       match_teams.team_num = frc_match_teams.team_num
-  --   );
+  DELETE FROM frc_match_teams
+  WHERE
+    match_key IN (
+      SELECT DISTINCT match_key
+      FROM match_teams
+    ) AND
+    NOT EXISTS (
+      SELECT 1
+      FROM match_teams
+      WHERE
+        match_teams.match_key = frc_match_teams.match_key AND
+        match_teams.team_num = frc_match_teams.team_num
+    );
 
   -- INSERT INTO frc_match_teams
   -- SELECT * FROM match_teams
