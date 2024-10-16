@@ -14,7 +14,201 @@ AS $$
   );
 $$;
 
-CREATE OR REPLACE PROCEDURE sync.event_teams(event_keys citext[])
+CREATE FUNCTION sync.extract_match_teams(
+  results jsonb[],
+  alliance_color text
+)
+RETURNS TABLE (
+  match_key citext,
+  team_num smallint,
+  alliance frc_alliance,
+  is_surrogate boolean,
+  is_disqualified boolean
+)
+LANGUAGE sql
+AS $$
+  WITH s AS (
+    SELECT
+      (r.j->>'key') AS match_key,
+      jsonb_array_elements_text(
+        r.j->'alliances'->alliance_color->'team_keys'
+      ) AS team_key,
+      (r.j->'alliances'->alliance_color) AS alliance,
+      r.j AS j
+    FROM unnest(results) r(j)
+  )
+  SELECT
+    match_key::citext,
+    substring(team_key FROM '\d+$')::smallint AS team_num,
+    alliance_color::frc_alliance AS alliance,
+    team_key = ANY(ARRAY(SELECT jsonb_array_elements_text(alliance->'surrogate_team_keys'))) AS is_surrogate,
+    team_key = ANY(ARRAY(SELECT jsonb_array_elements_text(alliance->'dq_team_keys'))) AS is_disqualified
+  FROM s;
+$$;
+
+CREATE OR REPLACE PROCEDURE sync.matches(event_keys citext[])
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  endpoint_prefix CONSTANT text := '/event/';
+  endpoint_suffix CONSTANT text := '/matches';
+  request_ids bigint[];
+  results jsonb[];
+BEGIN
+  DROP TABLE IF EXISTS requests;
+  CREATE TEMP TABLE requests AS
+  SELECT
+    event_key,
+    sync.tba_request(
+      endpoint_prefix || event_key || endpoint_suffix
+    ) AS request_id
+  FROM unnest(event_keys) keys(event_key);
+
+  SELECT INTO request_ids
+  ARRAY(SELECT request_id FROM requests);
+  CALL sync.await_responses(request_ids);
+
+  SELECT INTO results
+  ARRAY(
+    SELECT
+      jsonb_array_elements(response.content::jsonb) AS j
+    FROM
+      net._http_response response
+      JOIN requests ON requests.request_id = response.id
+    WHERE
+      response.status_code = 200
+  );
+
+  -- deletes frc_matches, frc_match_results, frc_match_teams
+  DELETE FROM frc_matches
+  WHERE
+    event_key = ANY(event_keys) AND
+    NOT EXISTS (
+      SELECT 1
+      FROM unnest(results) r(j)
+      WHERE
+        (r.j->>'event_key') = frc_matches.event_key AND
+        (r.j->>'key') = frc_matches.key
+    );
+
+  INSERT INTO frc_matches
+  SELECT
+    (r.j->>'key') AS key,
+    (r.j->>'event_key') AS event_key,
+    (r.j->>'comp_level') AS level,
+    (r.j->>'set_number')::smallint AS set,
+    (r.j->>'match_number')::smallint AS number,
+    to_timestamp((r.j->>'time')::float8) AS scheduled_time,
+    to_timestamp((r.j->>'predicted_time')::float8) AS predicted_time,
+    to_timestamp((r.j->>'actual_time')::float8) AS actual_time
+  FROM unnest(results) r(j)
+  ON CONFLICT (key) DO UPDATE
+  SET
+    event_key = EXCLUDED.event_key,
+    level = EXCLUDED.level,
+    set = EXCLUDED.set,
+    number = EXCLUDED.number,
+    scheduled_time = EXCLUDED.scheduled_time,
+    predicted_time = EXCLUDED.predicted_time,
+    actual_time = EXCLUDED.actual_time;
+
+  WITH match_results AS (
+    SELECT
+      (r.j->>'key') AS match_key,
+      (r.j->'alliances'->'red'->>'score')::smallint AS red_score,
+      (r.j->'alliances'->'blue'->>'score')::smallint AS blue_score,
+      nullif(r.j->>'winning_alliance', '')::frc_alliance AS winning_alliance,
+      ARRAY(SELECT jsonb_array_elements(r.j->'videos')) AS videos,
+      (r.j->'score_breakdown') AS score_breakdown
+    FROM unnest(results) r(j)
+  )
+  INSERT INTO frc_match_results
+  SELECT * FROM match_results
+  WHERE
+    red_score IS NOT NULL AND
+    red_score != -1 AND
+    blue_score IS NOT NULL AND
+    blue_score != -1
+  ON CONFLICT (match_key) DO UPDATE
+  SET
+    red_score = EXCLUDED.red_score,
+    blue_score = EXCLUDED.blue_score,
+    winning_alliance = EXCLUDED.winning_alliance,
+    videos = EXCLUDED.videos,
+    score_breakdown = EXCLUDED.score_breakdown;
+
+  DROP TABLE IF EXISTS match_teams;
+  CREATE TEMP TABLE match_teams AS
+  (
+    SELECT * FROM
+      sync.extract_match_teams(
+        results,
+        alliance_color := 'red'
+      )
+    UNION SELECT * FROM
+      sync.extract_match_teams(
+        results,
+        alliance_color := 'blue'
+      )
+  );
+
+  MERGE INTO frc_match_teams f
+  USING match_teams m ON
+    m.match_key = f.match_key AND
+    m.team_num = f.team_num
+  -- If entry already exists and needs to be deleted
+    -- Need PG 17 for WHEN NOT MATCHED BY SOURCE
+  -- If entry doesn't exist, insert it
+  WHEN NOT MATCHED THEN
+    INSERT
+      (match_key, team_num, alliance, is_surrogate, is_disqualified)
+    VALUES
+      (m.match_key, m.team_num, m.alliance, m.is_surrogate, m.is_disqualified)
+  -- If entry already exists, update it
+  WHEN MATCHED THEN
+    UPDATE SET
+      alliance = m.alliance,
+      is_surrogate = m.is_surrogate,
+      is_disqualified = m.is_disqualified
+  ;
+
+  DELETE FROM frc_match_teams
+  WHERE
+    (
+      SELECT event_key
+      FROM frc_matches
+      WHERE key = match_key
+    ) = ANY(event_keys) AND
+    NOT EXISTS (
+      SELECT 1
+      FROM match_teams
+      WHERE
+        match_teams.match_key = frc_match_teams.match_key AND
+        match_teams.team_num = frc_match_teams.team_num
+    );
+
+  -- INSERT INTO frc_match_teams
+  -- SELECT * FROM match_teams
+  -- ON CONFLICT (match_key, team_num) DO UPDATE
+  -- SET
+  --   alliance = EXCLUDED.alliance,
+  --   is_surrogate = EXCLUDED.is_surrogate,
+  --   is_disqualified = EXCLUDED.is_disqualified;
+
+  PERFORM
+    sync.update_etag(
+      endpoint_prefix || event_key || endpoint_suffix,
+      request_id
+    )
+  FROM requests;
+
+  DROP TABLE requests;
+  DROP TABLE match_teams;
+  COMMIT;
+END;
+$$;
+
+CREATE PROCEDURE sync.event_teams(event_keys citext[])
 LANGUAGE plpgsql
 AS $$
 DECLARE

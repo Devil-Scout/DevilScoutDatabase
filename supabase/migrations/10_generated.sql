@@ -172,9 +172,9 @@ CREATE TABLE "frc_match_results" (
   "match_key" citext NOT NULL,
   "red_score" smallint NOT NULL,
   "blue_score" smallint NOT NULL,
-  "videos" text[] NOT NULL,
-  "red_breakdown" jsonb,
-  "blue_breakdown" jsonb,
+  "winning_alliance" frc_alliance,
+  "videos" jsonb[] NOT NULL,
+  "score_breakdown" jsonb,
   "modified_at" timestamptz NOT NULL,
   PRIMARY KEY ("match_key")
 );

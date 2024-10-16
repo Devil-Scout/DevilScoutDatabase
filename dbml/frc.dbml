@@ -214,9 +214,9 @@ Table frc_match_results {
   match_key citext [not null]
   red_score smallint [not null]
   blue_score smallint [not null]
-  videos text[] [not null]
-  red_breakdown jsonb
-  blue_breakdown jsonb
+  winning_alliance frc_alliance
+  videos jsonb[] [not null]
+  score_breakdown jsonb
   modified_at timestamptz [not null]
 
   indexes {
