@@ -14,6 +14,71 @@ AS $$
   );
 $$;
 
+CREATE OR REPLACE PROCEDURE sync.event_teams(event_keys citext[])
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  endpoint_prefix CONSTANT text := '/event/';
+  endpoint_suffix CONSTANT text := '/teams/keys';
+  request_ids bigint[];
+BEGIN
+  DROP TABLE IF EXISTS requests;
+  CREATE TEMP TABLE requests AS
+  SELECT
+    event_key,
+    sync.tba_request(
+      endpoint_prefix || event_key || endpoint_suffix
+    ) AS request_id
+  FROM unnest(event_keys) keys(event_key);
+
+  SELECT INTO request_ids
+  ARRAY(SELECT request_id FROM requests);
+  CALL sync.await_responses(request_ids);
+
+  DROP TABLE IF EXISTS results;
+  CREATE TEMP TABLE results AS
+  (
+    SELECT
+      substring(
+        jsonb_array_elements_text(response.content::jsonb) FROM '\d+$'
+      )::smallint AS team_num,
+      requests.event_key AS event_key
+    FROM
+      net._http_response response
+      JOIN requests ON requests.request_id = response.id
+    WHERE
+      response.status_code = 200
+  );
+
+  DELETE FROM frc_event_teams
+  WHERE
+    event_key = ANY(event_keys) AND
+    NOT EXISTS (
+      SELECT 1
+      FROM results
+      WHERE
+        results.event_key = frc_event_teams.event_key AND
+        results.team_num = frc_event_teams.team_num
+    );
+  INSERT INTO frc_event_teams
+  SELECT
+    r.team_num,
+    r.event_key
+  FROM results r
+  ON CONFLICT (team_num, event_key) DO NOTHING;
+
+  PERFORM
+    sync.update_etag(
+      endpoint_prefix || event_key || endpoint_suffix,
+      request_id
+    )
+  FROM requests;
+
+  DROP TABLE requests;
+  COMMIT;
+END;
+$$;
+
 CREATE PROCEDURE sync.teams()
 LANGUAGE plpgsql
 AS $$
