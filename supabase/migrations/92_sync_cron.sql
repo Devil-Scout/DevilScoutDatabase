@@ -13,14 +13,14 @@ GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA cron TO postgres;
 --   - List of teams
 --   - Match schedules & results
 --   - Team rankings
-SELECT cron.schedule(
-  job_name := 'sync-rapid',
-  schedule := '*/5 * * * *',
-  command :=
-  $$
-  CALL sync.events(sync.current_year());
-  $$
-);
+-- SELECT cron.schedule(
+--   job_name := 'sync-rapid',
+--   schedule := '*/5 * * * *',
+--   command :=
+--   $$
+--   CALL sync.events(sync.current_year());
+--   $$
+-- );
 
 -- Once per day, sync:
 -- - For this season only:
