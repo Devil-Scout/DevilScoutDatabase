@@ -83,7 +83,6 @@ BEGIN
       response.status_code = 200
   );
 
-  -- deletes frc_matches, frc_match_results, frc_match_teams
   DELETE FROM frc_matches
   WHERE
     event_key IN (
@@ -95,26 +94,41 @@ BEGIN
       FROM unnest(results) r(j)
     );
 
-  INSERT INTO frc_matches
-  SELECT
-    (r.j->>'key') AS key,
-    (r.j->>'event_key') AS event_key,
-    (r.j->>'comp_level') AS level,
-    (r.j->>'set_number')::smallint AS set,
-    (r.j->>'match_number')::smallint AS number,
-    to_timestamp((r.j->>'time')::float8) AS scheduled_time,
-    to_timestamp((r.j->>'predicted_time')::float8) AS predicted_time,
-    to_timestamp((r.j->>'actual_time')::float8) AS actual_time
-  FROM unnest(results) r(j)
-  ON CONFLICT (key) DO UPDATE
-  SET
-    event_key = EXCLUDED.event_key,
-    level = EXCLUDED.level,
-    set = EXCLUDED.set,
-    number = EXCLUDED.number,
-    scheduled_time = EXCLUDED.scheduled_time,
-    predicted_time = EXCLUDED.predicted_time,
-    actual_time = EXCLUDED.actual_time;
+  WITH matches AS (
+    SELECT
+      (r.j->>'key') AS key,
+      (r.j->>'event_key') AS event_key,
+      (r.j->>'comp_level') AS level,
+      (r.j->>'set_number')::smallint AS set,
+      (r.j->>'match_number')::smallint AS number,
+      to_timestamp((r.j->>'time')::float8) AS scheduled_time,
+      to_timestamp((r.j->>'predicted_time')::float8) AS predicted_time,
+      to_timestamp((r.j->>'actual_time')::float8) AS actual_time
+    FROM unnest(results) r(j)
+  )
+  MERGE INTO frc_matches f
+  USING matches m ON
+    f.key = m.key
+  WHEN NOT MATCHED THEN
+    INSERT VALUES (
+      m.key,
+      m.event_key,
+      m.level,
+      m.set,
+      m.number,
+      m.scheduled_time,
+      m.predicted_time,
+      m.actual_time
+    )
+  WHEN MATCHED THEN
+    UPDATE SET
+      event_key = m.event_key,
+      level = m.level,
+      set = m.set,
+      number = m.number,
+      scheduled_time = m.scheduled_time,
+      predicted_time = m.predicted_time,
+      actual_time = m.actual_time;
 
   WITH match_results AS (
     SELECT
@@ -126,20 +140,25 @@ BEGIN
       (r.j->'score_breakdown') AS score_breakdown
     FROM unnest(results) r(j)
   )
-  INSERT INTO frc_match_results
-  SELECT * FROM match_results
-  WHERE
-    red_score IS NOT NULL AND
-    red_score != -1 AND
-    blue_score IS NOT NULL AND
-    blue_score != -1
-  ON CONFLICT (match_key) DO UPDATE
-  SET
-    red_score = EXCLUDED.red_score,
-    blue_score = EXCLUDED.blue_score,
-    winning_alliance = EXCLUDED.winning_alliance,
-    videos = EXCLUDED.videos,
-    score_breakdown = EXCLUDED.score_breakdown;
+  MERGE INTO frc_match_results f
+  USING match_results r ON
+    f.match_key = r.match_key
+  WHEN NOT MATCHED THEN
+    INSERT VALUES (
+      r.match_key,
+      r.red_score,
+      r.blue_score,
+      r.winning_alliance,
+      r.videos,
+      r.score_breakdown
+    )
+  WHEN MATCHED THEN
+    UPDATE SET
+      red_score = r.red_score,
+      blue_score = r.blue_score,
+      winning_alliance = r.winning_alliance,
+      videos = r.videos,
+      score_breakdown = r.score_breakdown;
 
   DROP TABLE IF EXISTS match_teams;
   CREATE TEMP TABLE match_teams AS
@@ -160,16 +179,13 @@ BEGIN
   USING match_teams m ON
     m.match_key = f.match_key AND
     m.team_num = f.team_num
-  -- If entry already exists and needs to be deleted
-    -- Need PG 17 for WHEN NOT MATCHED BY SOURCE
-    -- Currently handled by following DELETE clause
-  -- If entry doesn't exist, insert it
+  -- Need PG 17 for WHEN NOT MATCHED BY SOURCE
+  -- Currently handled by following DELETE clause
   WHEN NOT MATCHED THEN
     INSERT
       (match_key, team_num, alliance, is_surrogate, is_disqualified)
     VALUES
       (m.match_key, m.team_num, m.alliance, m.is_surrogate, m.is_disqualified)
-  -- If entry already exists, update it
   WHEN MATCHED THEN
     UPDATE SET
       alliance = m.alliance,
@@ -239,9 +255,24 @@ BEGIN
       response.status_code = 200
   );
 
+  MERGE INTO frc_event_teams f
+  USING results r ON
+    f.team_num = r.team_num AND
+    f.event_key = r.event_key
+  WHEN NOT MATCHED THEN
+    INSERT VALUES (
+      r.team_num,
+      r.event_key
+    )
+  WHEN MATCHED THEN
+    DO NOTHING;
+
   DELETE FROM frc_event_teams
   WHERE
-    event_key = ANY(event_keys) AND
+    event_key IN (
+      SELECT event_key
+      FROM results
+    ) AND
     NOT EXISTS (
       SELECT 1
       FROM results
@@ -249,12 +280,6 @@ BEGIN
         results.event_key = frc_event_teams.event_key AND
         results.team_num = frc_event_teams.team_num
     );
-  INSERT INTO frc_event_teams
-  SELECT
-    r.team_num,
-    r.event_key
-  FROM results r
-  ON CONFLICT (team_num, event_key) DO NOTHING;
 
   PERFORM
     sync.update_etag(
@@ -310,27 +335,31 @@ BEGIN
       ) AS coordinates
     FROM responses r
   )
-  INSERT INTO frc_teams
-  SELECT
-    t.number,
-    t.name,
-    t.rookie_season,
-    t.website,
-    t.city,
-    t.province,
-    t.country,
-    t.postal_code,
-    t.coordinates
-  FROM teams t
-  ON CONFLICT (number) DO UPDATE SET
-    name = EXCLUDED.name,
-    rookie_season = EXCLUDED.rookie_season,
-    website = EXCLUDED.website,
-    city = EXCLUDED.city,
-    province = EXCLUDED.province,
-    country = EXCLUDED.country,
-    postal_code = EXCLUDED.postal_code,
-    coordinates = EXCLUDED.coordinates;
+  MERGE INTO frc_teams f
+  USING teams t ON
+    f.number = t.number
+  WHEN NOT MATCHED THEN
+    INSERT VALUES (
+      t.number,
+      t.name,
+      t.rookie_season,
+      t.website,
+      t.city,
+      t.province,
+      t.country,
+      t.postal_code,
+      t.coordinates
+    )
+  WHEN MATCHED THEN
+    UPDATE SET
+      name = t.name,
+      rookie_season = t.rookie_season,
+      website = t.website,
+      city = t.city,
+      province = t.province,
+      country = t.country,
+      postal_code = t.postal_code,
+      coordinates = t.coordinates;
 
   PERFORM
     sync.update_etag(endpoint || page_num, request_id)
@@ -362,24 +391,26 @@ BEGIN
   ), districts AS (
     SELECT
       (r.j->>'key')::citext AS key,
-      (r.j->>'display_name') AS name,
       (r.j->>'year')::smallint AS season,
-      (r.j->>'abbreviation')::citext AS code
+      (r.j->>'abbreviation')::citext AS code,
+      (r.j->>'display_name') AS name
     FROM responses r
   )
-  INSERT INTO frc_districts
-    (key, name, season, code)
-  SELECT
-    d.key,
-    d.name,
-    d.season,
-    d.code
-  FROM districts d
-  ON CONFLICT (key) DO UPDATE SET
-    key = EXCLUDED.key,
-    name = EXCLUDED.name,
-    season = EXCLUDED.season,
-    code = EXCLUDED.code;
+  MERGE INTO frc_districts f
+  USING districts d ON
+    f.key = d.key
+  WHEN NOT MATCHED THEN
+    INSERT VALUES (
+      d.key,
+      d.season,
+      d.code,
+      d.name
+    )
+  WHEN MATCHED THEN
+    UPDATE SET
+      season = d.season,
+      code = d.code,
+      name = d.name;
 
   PERFORM sync.update_etag(endpoint, request_id);
 
@@ -431,48 +462,52 @@ BEGIN
       ) AS coordinates
     FROM responses r
   )
-  INSERT INTO frc_events
-  SELECT
-    e.key,
-    e.name,
-    e.name_short,
-    e.season,
-    e.code,
-    e.district_key,
-    e.type,
-    e.start_date,
-    e.end_date,
-    e.timezone,
-    e.week,
-    e.website,
-    e.location,
-    e.address,
-    e.city,
-    e.province,
-    e.country,
-    e.postal_code,
-    e.coordinates
-  FROM events e
-  ON CONFLICT (key) DO UPDATE SET
-    key = EXCLUDED.key,
-    name = EXCLUDED.name,
-    name_short = EXCLUDED.name_short,
-    season = EXCLUDED.season,
-    code = EXCLUDED.code,
-    district_key = EXCLUDED.district_key,
-    type = EXCLUDED.type,
-    start_date = EXCLUDED.start_date,
-    end_date = EXCLUDED.end_date,
-    timezone = EXCLUDED.timezone,
-    week = EXCLUDED.week,
-    website = EXCLUDED.website,
-    location = EXCLUDED.location,
-    address = EXCLUDED.address,
-    city = EXCLUDED.city,
-    province = EXCLUDED.province,
-    country = EXCLUDED.country,
-    postal_code = EXCLUDED.postal_code,
-    coordinates = EXCLUDED.coordinates;
+  MERGE INTO frc_events f
+  USING events e ON
+    e.key = f.key
+  WHEN NOT MATCHED THEN
+    INSERT VALUES (
+      e.key,
+      e.name,
+      e.name_short,
+      e.season,
+      e.code,
+      e.district_key,
+      e.type,
+      e.start_date,
+      e.end_date,
+      e.timezone,
+      e.week,
+      e.website,
+      e.location,
+      e.address,
+      e.city,
+      e.province,
+      e.country,
+      e.postal_code,
+      e.coordinates
+    )
+  WHEN MATCHED THEN
+    UPDATE SET
+      key = e.key,
+      name = e.name,
+      name_short = e.name_short,
+      season = e.season,
+      code = e.code,
+      district_key = e.district_key,
+      type = e.type,
+      start_date = e.start_date,
+      end_date = e.end_date,
+      timezone = e.timezone,
+      week = e.week,
+      website = e.website,
+      location = e.location,
+      address = e.address,
+      city = e.city,
+      province = e.province,
+      country = e.country,
+      postal_code = e.postal_code,
+      coordinates = e.coordinates;
 
   PERFORM sync.update_etag(endpoint, request_id);
 
