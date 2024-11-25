@@ -12,13 +12,6 @@ CREATE POLICY "Anyone can SELECT anything"
 ON categories FOR SELECT TO authenticated
 USING (true);
 
--- question_sections
-GRANT SELECT ON TABLE question_sections TO authenticated;
-
-CREATE POLICY "Anyone can SELECT anything"
-ON question_sections FOR SELECT TO authenticated
-USING (true);
-
 -- questions
 GRANT SELECT ON TABLE questions TO authenticated;
 

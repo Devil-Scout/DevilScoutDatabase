@@ -40,7 +40,6 @@ AS $$
 DECLARE
   submission public.submissions%ROWTYPE;
   question public.questions%ROWTYPE;
-  question_section public.question_sections%ROWTYPE;
   data_type public.data_type;
 BEGIN
   SELECT * INTO submission
@@ -50,10 +49,6 @@ BEGIN
   SELECT * INTO question
   FROM public.questions
   WHERE id = NEW.question_id;
-
-  SELECT * INTO question_section
-  FROM public.question_sections
-  WHERE id = question.section_id;
 
   SELECT type INTO data_type
   FROM public.question_types
@@ -65,7 +60,7 @@ BEGIN
     RAISE EXCEPTION 'invalid question season for submission';
   END IF;
 
-  IF submission.category != question_section.category THEN
+  IF submission.category != question.category THEN
     RAISE EXCEPTION 'invalid question category for submission';
   END IF;
 
