@@ -31,8 +31,8 @@ Table team_users {
   indexes {
     user_id [pk] // patch: include (team_num)
     (team_num, user_id) [unique]
-    (team_num, added_at)
-    added_by
+    (team_num, added_at) // order by time added
+    added_by // for fk
   }
 
   Note: 'A user\'s association with a team'
@@ -48,7 +48,7 @@ Table team_requests {
 
   indexes {
     user_id [pk]
-    (team_num, requested_at) // patch: include (user_id)
+    (team_num, requested_at) // order by time requested, patch: include (user_id)
   }
 
   Note: 'A user\'s request to join a team'
@@ -63,7 +63,7 @@ Table disabled_users {
 
   indexes {
     user_id [pk]
-    disabled_by
+    disabled_by // for fk
   }
 
   Note: 'A user whose privileges have been temporarily revoked'
@@ -92,15 +92,14 @@ Table permissions {
 
   indexes {
     (user_id, type) [pk]
-    (type, team_num)
-    (user_id, team_num)
-    (granted_by, team_num)
+    (team_num, type)
+    (team_num, user_id) // for fk
+    (team_num, granted_by) // for fk
   }
 
   Note: 'A user\'s permission'
 }
 Ref: permissions.user_id > users.id [delete: cascade]
-Ref: permissions.(user_id, team_num) > team_users.(user_id, team_num) [delete: cascade]
-Ref: permissions.granted_by > users.id [delete: set null]
-Ref: permissions.(granted_by, team_num) > team_users.(user_id, team_num) [delete: cascade]
 Ref: permissions.type > permission_types.id [delete: cascade]
+Ref: permissions.(team_num, user_id) > team_users.(team_num, user_id) [delete: cascade]
+Ref: permissions.(team_num, granted_by) > team_users.(team_num, user_id) [delete: cascade]

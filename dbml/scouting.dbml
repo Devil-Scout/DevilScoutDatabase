@@ -4,6 +4,17 @@ Enum data_type {
   text
 }
 
+Table categories {
+  id citext [not null]
+  has_match bool [not null]
+
+  indexes {
+    id [pk]
+  }
+
+  Note: 'A type of scouting data users can submit'
+}
+
 Table question_types {
   id citext [not null]
   name text [not null]
@@ -16,53 +27,28 @@ Table question_types {
   Note: 'A type of scouting question shown to the user'
 }
 
-Table categories {
-  id citext [not null]
-  has_match bool [not null]
-
-  indexes {
-    id [pk]
-  }
-
-  Note: 'A type of scouting data users can submit'
-}
-
-Table question_sections {
-  id uuid [not null]
-  season smallint [not null]
-  category citext [not null]
-  index smallint [not null]
-  name text [not null]
-
-  indexes {
-    id [pk]
-    (season, category, index) [unique]
-    category
-  }
-
-  Note: 'A section within a set of scouting questions'
-}
-Ref: question_sections.category > categories.id [delete: restrict]
-
 Table questions {
   id uuid [not null]
-  section_id uuid [not null]
+  parent_id uuid
   index smallint [not null]
-  prompt text [not null]
+
+  season smallint [not null]
+  category citext [not null]
   type citext [not null]
-  config jsonb [not null, default: '{}']
-  info_filepath text
+  prompt text
+  config jsonb
+  info_path text
 
   indexes {
     id [pk]
-    section_id
-    type
+    (season, category, id) [unique]
+    (parent_id, index) [unique]
+    category // for fk
   }
-
-  Note: 'A scouting question that users must answer'
 }
-Ref: questions.section_id > question_sections.id
-Ref: questions.type > question_types.id [delete: restrict]
+Ref: questions.parent_id > questions.id [delete: restrict]
+Ref: questions.season > frc_seasons.year [delete: restrict]
+Ref: questions.category > categories.id [delete: restrict]
 
 Table submissions {
   id uuid [not null]
@@ -77,9 +63,10 @@ Table submissions {
 
   indexes {
     id [pk]
+    season
     category
     event_key
-    match_key
+    (match_key, team_num)
     team_num
     scouted_by
     scouted_for
@@ -115,53 +102,3 @@ Table submission_data {
 }
 Ref: submission_data.submission_id > submissions.id [delete: cascade]
 Ref: submission_data.question_id > questions.id [delete: restrict]
-
-// Table pick_lists {
-//   id uuid [not null]
-//   team_num smallint [not null]
-//   name text [not null]
-//   season smallint [not null]
-//   event_code citext [not null]
-//   created_at timestamptz [not null]
-
-//   indexes {
-//     id [pk]
-//     (season, event_code)
-//     (team_num, season, event_code)
-//   }
-
-//   Note: 'A list of teams that might be selected for a playoff alliance'
-// }
-// Ref: pick_lists.team_num > teams.number [delete: cascade]
-// Ref: pick_lists.(season, event_code) > frc_events.(season, code) [delete: restrict]
-
-// Table pick_list_teams {
-//   list_id uuid [not null]
-//   team_num smallint [not null]
-//   parent smallint
-//   added_at timestamptz [not null]
-
-//   indexes {
-//     (list_id, team_num) [pk]
-//     (list_id, parent)
-//   }
-
-//   Note: 'A team on a pick list'
-// }
-// Ref: pick_list_teams.list_id > pick_lists.id
-// Ref: pick_list_teams.(list_id, parent) > pick_list_teams.(list_id, team_num) [delete: cascade]
-
-// Table pick_list_shares {
-//   list_id uuid [not null]
-//   shared_with smallint [not null]
-//   shared_at timestamptz [not null]
-
-//   indexes {
-//     (list_id, shared_with) [pk]
-//     shared_with
-//   }
-
-//   Note: 'A team a pick list is shared with'
-// }
-// Ref: pick_list_shares.list_id > pick_lists.id [delete: cascade]
-// Ref: pick_list_shares.shared_with > teams.number [delete: cascade]

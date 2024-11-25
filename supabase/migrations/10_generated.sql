@@ -70,7 +70,7 @@ CREATE TABLE "permissions" (
 
 CREATE TABLE "frc_seasons" (
   "year" smallint NOT NULL,
-  "game_name" text NOT NULL,
+  "name" text NOT NULL,
   PRIMARY KEY ("year")
 );
 
@@ -79,7 +79,6 @@ CREATE TABLE "frc_districts" (
   "season" smallint NOT NULL,
   "code" citext NOT NULL,
   "name" text NOT NULL,
-  "modified_at" timestamptz NOT NULL,
   PRIMARY KEY ("key")
 );
 
@@ -114,7 +113,6 @@ CREATE TABLE "frc_events" (
   "country" text,
   "postal_code" citext,
   "coordinates" point,
-  "modified_at" timestamptz NOT NULL,
   PRIMARY KEY ("key")
 );
 
@@ -128,14 +126,12 @@ CREATE TABLE "frc_teams" (
   "country" text,
   "postal_code" text,
   "coordinates" point,
-  "modified_at" timestamptz NOT NULL,
   PRIMARY KEY ("number")
 );
 
 CREATE TABLE "frc_event_teams" (
   "team_num" smallint NOT NULL,
   "event_key" citext NOT NULL,
-  "modified_at" timestamptz NOT NULL,
   PRIMARY KEY ("event_key", "team_num")
 );
 
@@ -154,7 +150,6 @@ CREATE TABLE "frc_matches" (
   "scheduled_time" timestamptz,
   "predicted_time" timestamptz,
   "actual_time" timestamptz,
-  "modified_at" timestamptz NOT NULL,
   PRIMARY KEY ("key")
 );
 
@@ -164,7 +159,6 @@ CREATE TABLE "frc_match_teams" (
   "alliance" frc_alliance NOT NULL,
   "is_surrogate" boolean NOT NULL,
   "is_disqualified" boolean NOT NULL,
-  "modified_at" timestamptz NOT NULL,
   PRIMARY KEY ("match_key", "team_num")
 );
 
@@ -175,8 +169,13 @@ CREATE TABLE "frc_match_results" (
   "winning_alliance" frc_alliance,
   "videos" jsonb[] NOT NULL,
   "score_breakdown" jsonb,
-  "modified_at" timestamptz NOT NULL,
   PRIMARY KEY ("match_key")
+);
+
+CREATE TABLE "categories" (
+  "id" citext NOT NULL,
+  "has_match" bool NOT NULL,
+  PRIMARY KEY ("id")
 );
 
 CREATE TABLE "question_types" (
@@ -186,29 +185,16 @@ CREATE TABLE "question_types" (
   PRIMARY KEY ("id")
 );
 
-CREATE TABLE "categories" (
-  "id" citext NOT NULL,
-  "has_match" bool NOT NULL,
-  PRIMARY KEY ("id")
-);
-
-CREATE TABLE "question_sections" (
-  "id" uuid NOT NULL,
-  "season" smallint NOT NULL,
-  "category" citext NOT NULL,
-  "index" smallint NOT NULL,
-  "name" text NOT NULL,
-  PRIMARY KEY ("id")
-);
-
 CREATE TABLE "questions" (
   "id" uuid NOT NULL,
-  "section_id" uuid NOT NULL,
+  "parent_id" uuid,
   "index" smallint NOT NULL,
-  "prompt" text NOT NULL,
+  "season" smallint NOT NULL,
+  "category" citext NOT NULL,
   "type" citext NOT NULL,
-  "config" jsonb NOT NULL DEFAULT '{}',
-  "info_filepath" text,
+  "prompt" text,
+  "config" jsonb,
+  "info_path" text,
   PRIMARY KEY ("id")
 );
 
@@ -238,7 +224,7 @@ CREATE TABLE "sync"."etags" (
   "key" text NOT NULL,
   "value" text NOT NULL,
   "modified_at" timestamptz NOT NULL,
-  PRIMARY KEY ("key")
+  PRIMARY KEY ("key") INCLUDE (value)
 );
 
 CREATE UNIQUE INDEX ON "team_users" ("team_num", "user_id");
@@ -251,19 +237,17 @@ CREATE INDEX ON "team_requests" ("team_num", "requested_at") INCLUDE (user_id);
 
 CREATE INDEX ON "disabled_users" ("disabled_by");
 
-CREATE INDEX ON "permissions" ("type", "team_num");
+CREATE INDEX ON "permissions" ("team_num", "type");
 
-CREATE INDEX ON "permissions" ("user_id", "team_num");
+CREATE INDEX ON "permissions" ("team_num", "user_id");
 
-CREATE INDEX ON "permissions" ("granted_by", "team_num");
+CREATE INDEX ON "permissions" ("team_num", "granted_by");
 
 CREATE UNIQUE INDEX ON "frc_districts" ("season", "code");
 
-CREATE INDEX ON "frc_districts" ("modified_at");
-
 CREATE UNIQUE INDEX ON "frc_events" ("season", "code");
 
-CREATE INDEX ON "frc_events" ("season", "type", "key");
+CREATE INDEX ON "frc_events" ("season", "type");
 
 CREATE INDEX ON "frc_events" ("season", "name");
 
@@ -275,19 +259,13 @@ CREATE INDEX ON "frc_events" ("district_key");
 
 CREATE INDEX ON "frc_events" ("type");
 
-CREATE INDEX ON "frc_events" ("modified_at");
-
 CREATE INDEX ON "frc_teams" ("name");
 
 CREATE INDEX ON "frc_teams" ("rookie_season");
 
 CREATE INDEX ON "frc_teams" ("country", "province", "city");
 
-CREATE INDEX ON "frc_teams" ("modified_at");
-
 CREATE UNIQUE INDEX ON "frc_event_teams" ("team_num", "event_key");
-
-CREATE INDEX ON "frc_event_teams" ("modified_at");
 
 CREATE UNIQUE INDEX ON "frc_match_levels" ("name");
 
@@ -299,29 +277,23 @@ CREATE INDEX ON "frc_matches" ("event_key", "predicted_time");
 
 CREATE INDEX ON "frc_matches" ("event_key", "actual_time");
 
-CREATE INDEX ON "frc_matches" ("modified_at");
-
 CREATE INDEX ON "frc_matches" ("level");
 
 CREATE INDEX ON "frc_match_teams" ("team_num", "match_key");
 
-CREATE INDEX ON "frc_match_teams" ("modified_at");
+CREATE UNIQUE INDEX ON "questions" ("season", "category", "id");
 
-CREATE INDEX ON "frc_match_results" ("modified_at");
+CREATE UNIQUE INDEX ON "questions" ("parent_id", "index");
 
-CREATE UNIQUE INDEX ON "question_sections" ("season", "category", "index");
+CREATE INDEX ON "questions" ("category");
 
-CREATE INDEX ON "question_sections" ("category");
-
-CREATE INDEX ON "questions" ("section_id");
-
-CREATE INDEX ON "questions" ("type");
+CREATE INDEX ON "submissions" ("season");
 
 CREATE INDEX ON "submissions" ("category");
 
 CREATE INDEX ON "submissions" ("event_key");
 
-CREATE INDEX ON "submissions" ("match_key");
+CREATE INDEX ON "submissions" ("match_key", "team_num");
 
 CREATE INDEX ON "submissions" ("team_num");
 
@@ -363,13 +335,9 @@ COMMENT ON TABLE "frc_match_teams" IS 'A team competing in a match';
 
 COMMENT ON TABLE "frc_match_results" IS 'An official match result from the FMS';
 
-COMMENT ON TABLE "question_types" IS 'A type of scouting question shown to the user';
-
 COMMENT ON TABLE "categories" IS 'A type of scouting data users can submit';
 
-COMMENT ON TABLE "question_sections" IS 'A section within a set of scouting questions';
-
-COMMENT ON TABLE "questions" IS 'A scouting question that users must answer';
+COMMENT ON TABLE "question_types" IS 'A type of scouting question shown to the user';
 
 COMMENT ON TABLE "submissions" IS 'A scouting data submission';
 
@@ -393,13 +361,11 @@ ALTER TABLE "disabled_users" ADD FOREIGN KEY ("disabled_by") REFERENCES "users" 
 
 ALTER TABLE "permissions" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE;
 
-ALTER TABLE "permissions" ADD FOREIGN KEY ("user_id", "team_num") REFERENCES "team_users" ("user_id", "team_num") ON DELETE CASCADE;
-
-ALTER TABLE "permissions" ADD FOREIGN KEY ("granted_by") REFERENCES "users" ("id") ON DELETE SET NULL;
-
-ALTER TABLE "permissions" ADD FOREIGN KEY ("granted_by", "team_num") REFERENCES "team_users" ("user_id", "team_num") ON DELETE CASCADE;
-
 ALTER TABLE "permissions" ADD FOREIGN KEY ("type") REFERENCES "permission_types" ("id") ON DELETE CASCADE;
+
+ALTER TABLE "permissions" ADD FOREIGN KEY ("team_num", "user_id") REFERENCES "team_users" ("team_num", "user_id") ON DELETE CASCADE;
+
+ALTER TABLE "permissions" ADD FOREIGN KEY ("team_num", "granted_by") REFERENCES "team_users" ("team_num", "user_id") ON DELETE CASCADE;
 
 ALTER TABLE "frc_districts" ADD FOREIGN KEY ("season") REFERENCES "frc_seasons" ("year") ON DELETE CASCADE;
 
@@ -408,6 +374,8 @@ ALTER TABLE "frc_events" ADD FOREIGN KEY ("season") REFERENCES "frc_seasons" ("y
 ALTER TABLE "frc_events" ADD FOREIGN KEY ("type") REFERENCES "frc_event_types" ("id") ON DELETE RESTRICT;
 
 ALTER TABLE "frc_events" ADD FOREIGN KEY ("district_key") REFERENCES "frc_districts" ("key") ON DELETE SET NULL;
+
+ALTER TABLE "frc_teams" ADD FOREIGN KEY ("rookie_season") REFERENCES "frc_seasons" ("year") ON DELETE RESTRICT;
 
 ALTER TABLE "frc_event_teams" ADD FOREIGN KEY ("event_key") REFERENCES "frc_events" ("key") ON DELETE CASCADE;
 
@@ -423,11 +391,11 @@ ALTER TABLE "frc_match_teams" ADD FOREIGN KEY ("team_num") REFERENCES "frc_teams
 
 ALTER TABLE "frc_match_results" ADD FOREIGN KEY ("match_key") REFERENCES "frc_matches" ("key") ON DELETE CASCADE;
 
-ALTER TABLE "question_sections" ADD FOREIGN KEY ("category") REFERENCES "categories" ("id") ON DELETE RESTRICT;
+ALTER TABLE "questions" ADD FOREIGN KEY ("parent_id") REFERENCES "questions" ("id") ON DELETE RESTRICT;
 
-ALTER TABLE "questions" ADD FOREIGN KEY ("section_id") REFERENCES "question_sections" ("id");
+ALTER TABLE "questions" ADD FOREIGN KEY ("season") REFERENCES "frc_seasons" ("year") ON DELETE RESTRICT;
 
-ALTER TABLE "questions" ADD FOREIGN KEY ("type") REFERENCES "question_types" ("id") ON DELETE RESTRICT;
+ALTER TABLE "questions" ADD FOREIGN KEY ("category") REFERENCES "categories" ("id") ON DELETE RESTRICT;
 
 ALTER TABLE "submissions" ADD FOREIGN KEY ("category") REFERENCES "categories" ("id") ON DELETE RESTRICT;
 

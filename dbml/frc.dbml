@@ -1,10 +1,11 @@
+// Hidden from clients
 Table sync.etags {
   key text [not null]
   value text [not null]
   modified_at timestamptz [not null]
 
   indexes {
-    key [pk]
+    key [pk] // patch: include value
   }
 
   Note: 'A TBA ETag to reduce network traffic'
@@ -13,7 +14,7 @@ Table sync.etags {
 // Manually populated
 Table frc_seasons {
   year smallint [not null]
-  game_name text [not null]
+  name text [not null]
 
   indexes {
     year [pk]
@@ -27,12 +28,10 @@ Table frc_districts {
   season smallint [not null]
   code citext [not null]
   name text [not null]
-  modified_at timestamptz [not null]
 
   indexes {
     key [pk]
     (season, code) [unique]
-    modified_at
   }
 
   Note: 'A district designation for a particular season'
@@ -83,18 +82,16 @@ Table frc_events {
   postal_code citext
   coordinates point
 
-  modified_at timestamptz [not null]
-
   indexes {
     key [pk]
     (season, code) [unique]
-    (season, type, key)
-    (season, name) // patch: include key
+    (season, type)
+    (season, name)
     (season, country, province)
     (season, start_date, end_date)
-    district_key
-    type
-    modified_at
+    district_key // for fk
+    type // for fk
+    // coordinates (type: gist)
   }
 
   Note: 'An event or competition'
@@ -115,29 +112,24 @@ Table frc_teams {
   postal_code text
   coordinates point
 
-  modified_at timestamptz [not null]
-
   indexes {
     number [pk]
     name // patch: include number
     rookie_season // patch: include number
     (country, province, city)
-    modified_at
   }
 
   Note: 'A team competing in a particular season'
 }
-// Ref: frc_teams.rookie_season > frc_seasons.year [delete: restrict] // requires all past seasons
+Ref: frc_teams.rookie_season > frc_seasons.year [delete: restrict]
 
 Table frc_event_teams {
   team_num smallint [not null]
   event_key citext [not null]
-  modified_at timestamptz [not null]
 
   indexes {
     (event_key, team_num) [pk]
     (team_num, event_key) [unique] // filter by season using LIKE
-    modified_at
   }
 
   Note: 'A team competing in an event'
@@ -169,15 +161,12 @@ Table frc_matches {
   predicted_time timestamptz
   actual_time timestamptz
 
-  modified_at timestamptz [not null]
-
   indexes {
     key [pk]
     (event_key, level, set, number) [unique]
     (event_key, scheduled_time)
     (event_key, predicted_time)
     (event_key, actual_time)
-    modified_at
     level
   }
 
@@ -197,12 +186,10 @@ Table frc_match_teams {
   alliance frc_alliance [not null]
   is_surrogate boolean [not null]
   is_disqualified boolean [not null]
-  modified_at timestamptz [not null]
 
   indexes {
     (match_key, team_num) [pk]
     (team_num, match_key) // filter by event using LIKE
-    modified_at
   }
 
   Note: 'A team competing in a match'
@@ -217,11 +204,9 @@ Table frc_match_results {
   winning_alliance frc_alliance
   videos jsonb[] [not null]
   score_breakdown jsonb
-  modified_at timestamptz [not null]
 
   indexes {
     match_key [pk]
-    modified_at
   }
 
   Note: 'An official match result from the FMS'
