@@ -80,7 +80,7 @@ AS $$
   )
   SELECT
     match_key::citext,
-    substring(team_key FROM '\d+$')::smallint AS team_num,
+    substring(team_key FROM '\d+')::smallint AS team_num,
     alliance_color::frc_alliance AS alliance,
     team_key IN (
       SELECT jsonb_array_elements_text(alliance->'surrogate_team_keys')
@@ -286,7 +286,7 @@ BEGIN
   (
     SELECT
       substring(
-        jsonb_array_elements_text(response.content::jsonb) FROM '\d+$'
+        jsonb_array_elements_text(response.content::jsonb) FROM '\d+'
       )::smallint AS team_num,
       requests.event_key AS event_key
     FROM
@@ -592,7 +592,7 @@ BEGIN
   WITH rankings AS (
     SELECT
       event_key,
-      substring(r.j->>'team_key' FROM '\d+$')::smallint AS team_num,
+      substring(r.j->>'team_key' FROM '\d+')::smallint AS team_num,
       (r.j->>'rank')::smallint AS rank,
       (r.j->>'matches_played')::smallint AS matches_played,
       (r.j->>'dq')::smallint AS dq_count,
