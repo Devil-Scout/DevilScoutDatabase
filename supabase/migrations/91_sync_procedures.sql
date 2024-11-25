@@ -50,7 +50,7 @@ AS $$
   FROM s;
 $$;
 
-CREATE OR REPLACE PROCEDURE sync.matches(event_keys citext[])
+CREATE PROCEDURE sync.matches(event_keys citext[])
 LANGUAGE plpgsql
 AS $$
 DECLARE
@@ -444,7 +444,7 @@ BEGIN
       (r.j->>'year')::smallint AS season,
       (r.j->>'event_code')::citext AS code,
       (r.j->'district'->>'key')::citext AS district_key,
-      (r.j->>'event_type')::smallint AS type,
+      nullif((r.j->>'event_type')::smallint, -1) AS type,
       (r.j->>'start_date')::date AS start_date,
       (r.j->>'end_date')::date AS end_date,
       (r.j->>'timezone') AS timezone,

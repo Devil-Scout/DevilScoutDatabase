@@ -57,9 +57,9 @@ VALUES
   (4, FALSE, TRUE, FALSE, FALSE, 'Championship Finals', 'Championship'),
   (5, TRUE, TRUE, TRUE, FALSE, 'District Championship Division', 'District Division'),
   (6, FALSE, FALSE, FALSE, FALSE, 'Festival of Champions', 'Festival'),
-  (7, FALSE, FALSE, FALSE, FALSE, 'Remote', 'Remote'),
-  (99, FALSE, FALSE, FALSE, TRUE, 'Offseason', 'Offseason'),
-  (100, FALSE, FALSE, FALSE, TRUE, 'Preseason', 'Preseason');
+  (7, FALSE, FALSE, FALSE, FALSE, 'Remote Event', 'Remote'),
+  (99, FALSE, FALSE, FALSE, TRUE, 'Offseason Event', 'Offseason'),
+  (100, FALSE, FALSE, FALSE, TRUE, 'Preseason Event', 'Preseason');
 
 INSERT INTO frc_match_levels
   (id, name)
@@ -71,7 +71,7 @@ VALUES
   ('f', 'Final');
 
 INSERT INTO frc_seasons
-  (year, game_name)
+  (year, name)
 VALUES
   (1992, 'Maize Craze'),
   (1993, 'Rug Rage'),
