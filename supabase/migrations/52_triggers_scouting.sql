@@ -56,7 +56,7 @@ BEGIN
 
   -- ensure question is permitted in this submission
 
-  IF submission.season != question_section.season THEN
+  IF submission.season != question.season THEN
     RAISE EXCEPTION 'invalid question season for submission';
   END IF;
 
@@ -76,9 +76,10 @@ BEGIN
     RAISE EXCEPTION 'exactly one value type is required';
   END IF;
 
-  IF (NEW.value_bool IS NULL AND data_type = 'boolean') OR
-      (NEW.value_int IS NULL AND data_type = 'int') OR
-      (NEW.value_text IS NULL AND data_type = 'text') THEN
+  IF (data_type = 'boolean' AND NEW.value_bool IS NULL) OR
+      (data_type = 'int' AND NEW.value_int IS NULL) OR
+      (data_type = 'text' AND NEW.value_text IS NULL) OR
+      (data_type IS NULL) THEN
     RAISE EXCEPTION 'incorrect value type for question';
   END IF;
 

@@ -193,7 +193,7 @@ CREATE TABLE "categories" (
 CREATE TABLE "question_types" (
   "id" citext NOT NULL,
   "name" text NOT NULL,
-  "type" data_type NOT NULL,
+  "type" data_type,
   PRIMARY KEY ("id")
 );
 

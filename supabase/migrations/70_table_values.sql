@@ -45,7 +45,8 @@ VALUES
   ('range', 'Range', 'int'),
   ('checkboxes', 'Checkboxes', 'text'),
   ('dropdown', 'Dropdown', 'text'),
-  ('radio', 'Radio', 'text');
+  ('radio', 'Radio', 'text'),
+  ('group', 'Group', NULL);
 
 INSERT INTO frc_event_types
   (id, is_district, is_championship, is_division, is_offseason, name, name_short)

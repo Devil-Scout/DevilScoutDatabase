@@ -18,7 +18,7 @@ Table categories {
 Table question_types {
   id citext [not null]
   name text [not null]
-  type data_type [not null]
+  type data_type
 
   indexes {
     id [pk]
