@@ -172,6 +172,18 @@ CREATE TABLE "frc_match_results" (
   PRIMARY KEY ("match_key")
 );
 
+CREATE TABLE "frc_event_rankings" (
+  "event_key" citext NOT NULL,
+  "team_num" smallint NOT NULL,
+  "rank" smallint NOT NULL,
+  "matches_played" smallint NOT NULL,
+  "dq_count" smallint NOT NULL,
+  "wins" smallint,
+  "losses" smallint,
+  "ties" smallint,
+  PRIMARY KEY ("event_key", "team_num")
+);
+
 CREATE TABLE "categories" (
   "id" citext NOT NULL,
   "has_match" bool NOT NULL,
@@ -280,6 +292,10 @@ CREATE INDEX ON "frc_matches" ("event_key", "actual_time");
 CREATE INDEX ON "frc_matches" ("level");
 
 CREATE INDEX ON "frc_match_teams" ("team_num", "match_key");
+
+CREATE UNIQUE INDEX ON "frc_event_rankings" ("team_num", "event_key");
+
+CREATE INDEX ON "frc_event_rankings" ("event_key", "rank");
 
 CREATE UNIQUE INDEX ON "questions" ("season", "category", "id");
 

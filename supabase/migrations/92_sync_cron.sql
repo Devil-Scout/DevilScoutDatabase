@@ -15,6 +15,7 @@ SELECT cron.schedule(
   $$
   SELECT sync.connect();
   SELECT sync.exec('CALL sync.event_teams(sync.current_event_keys())');
+  SELECT sync.exec('CALL sync.event_rankings(sync.current_event_keys())');
   SELECT sync.exec('CALL sync.matches(sync.current_event_keys())');
   SELECT sync.disconnect();
   $$
@@ -29,6 +30,7 @@ SELECT cron.schedule (
   SELECT sync.exec('CALL sync.events(sync.current_year())');
   SELECT sync.exec('CALL sync.teams()');
   SELECT sync.exec('CALL sync.event_teams(sync.non_current_event_keys())');
+  SELECT sync.exec('CALL sync.event_rankings(sync.non_current_event_keys())');
   SELECT sync.exec('CALL sync.matches(sync.non_current_event_keys())');
   SELECT sync.disconnect();
   $$
@@ -44,6 +46,7 @@ SELECT cron.schedule (
     SELECT sync.exec('CALL sync.events(' || year || '::smallint)');
   END LOOP;
   SELECT sync.exec('CALL sync.event_teams(sync.old_event_keys())');
+  -- SELECT sync.exec('CALL sync.event_rankings(sync.old_event_keys())');
   SELECT sync.exec('CALL sync.matches(sync.old_event_keys())');
   SELECT sync.disconnect();
   $$

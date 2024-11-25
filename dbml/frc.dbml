@@ -212,3 +212,20 @@ Table frc_match_results {
   Note: 'An official match result from the FMS'
 }
 Ref: frc_match_results.match_key > frc_matches.key [delete: cascade]
+
+Table frc_event_rankings {
+  event_key citext [not null]
+  team_num smallint [not null]
+  rank smallint [not null]
+  matches_played smallint [not null]
+  dq_count smallint [not null]
+  wins smallint
+  losses smallint
+  ties smallint
+
+  indexes {
+    (event_key, team_num) [pk]
+    (team_num, event_key) [unique]
+    (event_key, rank)
+  }
+}

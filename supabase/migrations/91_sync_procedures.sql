@@ -555,3 +555,85 @@ BEGIN
   COMMIT;
 END;
 $$;
+
+CREATE PROCEDURE sync.event_rankings(event_keys citext[])
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  endpoint_prefix CONSTANT text := '/event/';
+  endpoint_suffix CONSTANT text := '/rankings';
+  request_ids bigint[];
+BEGIN
+  DROP TABLE IF EXISTS requests;
+  CREATE TEMP TABLE requests AS
+  SELECT
+    event_key,
+    sync.tba_request(
+      endpoint_prefix || event_key || endpoint_suffix
+    ) AS request_id
+  FROM unnest(event_keys) keys(event_key);
+
+  SELECT INTO request_ids
+  ARRAY(SELECT request_id FROM requests);
+  CALL sync.await_responses(request_ids);
+
+  CREATE TEMP TABLE results AS
+  SELECT
+    requests.event_key,
+    jsonb_array_elements(response.content::jsonb) AS j
+  FROM
+    net._http_response response
+    JOIN requests ON requests.request_id = response.id
+  WHERE
+    response.status_code = 200;
+
+  -- should never need to delete from rankings...
+
+  WITH rankings AS (
+    SELECT
+      event_key,
+      substring(r.j->>'team_key' FROM '\d+$')::smallint AS team_num,
+      (r.j->>'rank')::smallint AS rank,
+      (r.j->>'matches_played')::smallint AS matches_played,
+      (r.j->>'dq')::smallint AS dq_count,
+      (r.j->'record'->>'losses')::smallint AS losses,
+      (r.j->'record'->>'wins')::smallint AS wins,
+      (r.j->'record'->>'ties')::smallint AS ties
+    FROM results
+  )
+  MERGE INTO frc_event_rankings e
+  USING rankings r ON
+    e.event_key = r.event_key AND
+    e.team_num = r.team_num
+  WHEN NOT MATCHED THEN
+    INSERT VALUES (
+      r.event_key,
+      r.team_num,
+      r.rank,
+      r.matches_played,
+      r.dq_count,
+      r.wins,
+      r.losses,
+      r.ties
+    )
+  WHEN MATCHED THEN
+    UPDATE SET
+      rank = r.rank,
+      matches_played = r.matches_played,
+      dq_count = r.dq_count,
+      wins = r.wins,
+      losses = r.losses,
+      ties = r.ties;
+
+  PERFORM
+    sync.update_etag(
+      endpoint_prefix || event_key || endpoint_suffix,
+      request_id
+    )
+  FROM requests;
+
+  DROP TABLE requests;
+  DROP TABLE results;
+  COMMIT;
+END;
+$$;
