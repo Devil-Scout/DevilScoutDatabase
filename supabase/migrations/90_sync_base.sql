@@ -1,5 +1,32 @@
 CREATE EXTENSION IF NOT EXISTS pg_net WITH SCHEMA extensions;
 
+CREATE FUNCTION sync.connect()
+RETURNS void
+LANGUAGE sql
+AS $$
+  SELECT dblink_connect('sync_conn', 'postgresql://postgres.jlhplhsuiwwcmxrtbdhp:'
+  || (
+    SELECT decrypted_secret
+    FROM vault.decrypted_secrets
+    WHERE name = 'sync_dblink_password'
+  ) ||
+  '@aws-0-us-east-1.pooler.supabase.com:6543/postgres');
+$$;
+
+CREATE FUNCTION sync.disconnect()
+RETURNS void
+LANGUAGE sql
+AS $$
+  SELECT dblink_disconnect('sync_conn');
+$$;
+
+CREATE FUNCTION sync.exec(sql text)
+RETURNS void
+LANGUAGE sql
+AS $$
+  SELECT dblink_exec('sync_conn', sql, true);
+$$;
+
 CREATE FUNCTION sync.jsonb_merge_nullable(a jsonb, b jsonb)
 RETURNS jsonb
 IMMUTABLE

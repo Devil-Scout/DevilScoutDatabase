@@ -1,4 +1,16 @@
-CREATE FUNCTION sync.get_current_event_keys()
+CREATE FUNCTION sync.old_seasons()
+RETURNS smallint[]
+STABLE
+LANGUAGE sql
+AS $$
+  SELECT ARRAY(
+    SELECT year
+    FROM frc_seasons
+    WHERE year < sync.current_year()
+  );
+$$;
+
+CREATE FUNCTION sync.current_event_keys()
 RETURNS citext[]
 STABLE
 LANGUAGE sql
@@ -11,6 +23,35 @@ AS $$
       event.season = sync.current_year() AND
       now() >= (event.start_date - INTERVAL '1 day') AND
       now() <= (event.end_date + INTERVAL '1 day')
+  );
+$$;
+
+CREATE FUNCTION sync.non_current_event_keys()
+RETURNS citext[]
+STABLE
+LANGUAGE sql
+AS $$
+  SELECT ARRAY(
+    SELECT
+      event.key
+    FROM frc_events event
+    WHERE
+      event.season = sync.current_year() AND
+      event.key NOT IN (SELECT unnest(sync.current_event_keys()))
+  );
+$$;
+
+CREATE FUNCTION sync.old_event_keys()
+RETURNS citext[]
+STABLE
+LANGUAGE sql
+AS $$
+  SELECT ARRAY(
+    SELECT
+      event.key
+    FROM frc_events event
+    WHERE
+      event.season < sync.current_year()
   );
 $$;
 

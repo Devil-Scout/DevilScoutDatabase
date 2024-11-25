@@ -8,61 +8,51 @@ GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA cron TO postgres;
 --    - International competitions will likely see slightly degraded performance
 -- - Use ETag and If-None-Match headers to reduce traffic
 
--- Every 5 minutes, sync:
--- - For all current events:
---   - List of teams
---   - Match schedules & results
---   - Team rankings
--- SELECT cron.schedule(
---   job_name := 'sync-rapid',
---   schedule := '*/5 * * * *',
---   command :=
---   $$
---   CALL sync.events(sync.current_year());
---   $$
--- );
+SELECT cron.schedule(
+  job_name := 'sync-rapid',
+  schedule := '*/5 * * * *',
+  command :=
+  $$
+  SELECT sync.connect();
+  SELECT sync.exec('CALL sync.event_teams(sync.current_event_keys())');
+  SELECT sync.exec('CALL sync.matches(sync.current_event_keys())');
+  SELECT sync.disconnect();
+  $$
+);
 
--- Once per day, sync:
--- - For this season only:
---   - All districts
---   - All events
---   - All teams
---   - For all non-current events:
---     - List of teams
---     - Match schedules & results
---     - Team rankings
---   - For all events:
---     - Awards
--- SELECT cron.schedule (
---   'sync-season',
---   '0 6 * * *',
---   $$
---   $$
--- );
+SELECT cron.schedule (
+  'sync-season',
+  '0 * * * *',
+  $$
+  SELECT sync.connect();
+  SELECT sync.exec('CALL sync.districts(sync.current_year())');
+  SELECT sync.exec('CALL sync.events(sync.current_year())');
+  SELECT sync.exec('CALL sync.teams()');
+  SELECT sync.exec('CALL sync.event_teams(sync.non_current_event_keys())');
+  SELECT sync.exec('CALL sync.matches(sync.non_current_event_keys())');
+  SELECT sync.disconnect();
+  $$
+);
 
--- Once per week on Mondays, sync:
--- - For all non-current seasons:
---   - All districts
---   - All events
---   - All teams
---   - For all events:
---     - List of teams
---     - Match schedules & results
---     - Team rankings
---     - Awards
--- SELECT cron.schedule (
---   'sync-archive',
---   '0 6 * * 1',
---   $$
---   $$
--- );
+SELECT cron.schedule (
+  'sync-archive',
+  '0 6 * * 1',
+  $$
+  SELECT sync.connect();
+  FOR year IN sync.old_seasons() LOOP\
+    SELECT sync.exec('CALL sync.districts(' || year || '::smallint)');
+    SELECT sync.exec('CALL sync.events(' || year || '::smallint)');
+  END LOOP;
+  SELECT sync.exec('CALL sync.event_teams(sync.old_event_keys())');
+  SELECT sync.exec('CALL sync.matches(sync.old_event_keys())');
+  SELECT sync.disconnect();
+  $$
+);
 
--- Once per day, run VACUUM ANALYZE
--- Runs an hour after daily/weekly syncs
--- SELECT cron.schedule(
---   'vacuum-analyze',
---   '0 7 * * *',
---   $$
---   VACUUM ANALYZE;
---   $$
--- );
+SELECT cron.schedule(
+  'vacuum-analyze',
+  '0 7 * * *',
+  $$
+  VACUUM ANALYZE;
+  $$
+);
