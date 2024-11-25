@@ -16,3 +16,8 @@ USING GIN
   (question_id, value_text)
 WHERE
   value_text IS NOT NULL;
+
+CREATE INDEX
+ON frc_events
+USING GIST
+  (coordinates);
