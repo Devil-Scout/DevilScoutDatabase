@@ -103,7 +103,7 @@ CREATE TABLE "frc_events" (
   "type" smallint,
   "start_date" date NOT NULL,
   "end_date" date NOT NULL,
-  "timezone" text NOT NULL,
+  "timezone" text,
   "week" smallint,
   "website" text,
   "location" text,

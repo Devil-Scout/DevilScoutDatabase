@@ -69,7 +69,7 @@ Table frc_events {
 
   start_date date [not null]
   end_date date [not null]
-  timezone text [not null]
+  timezone text
   week smallint
 
   website text
