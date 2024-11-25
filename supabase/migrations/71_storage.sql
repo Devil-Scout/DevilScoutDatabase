@@ -13,6 +13,34 @@ VALUES
     FALSE,
     (1 * 1024 * 1024),
     '{ "text/markdown" }'
+  ),
+  (
+    'user-data',
+    'user-data',
+    FALSE,
+    (1 * 1024 * 1024),
+    NULL
+  ),
+  (
+    'team-data',
+    'team-data',
+    FALSE,
+    (1 * 1024 * 1024),
+    NULL
+  ),
+  (
+    'shared-data',
+    'shared-data',
+    TRUE,
+    (1 * 1024 * 1024),
+    NULL
+  ),
+  (
+    'public-data',
+    'public-data',
+    TRUE,
+    (1 * 1024 * 1024),
+    NULL
   )
 ON CONFLICT (id) DO UPDATE
 SET
