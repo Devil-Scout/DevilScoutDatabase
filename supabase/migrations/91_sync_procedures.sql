@@ -306,12 +306,12 @@ BEGIN
 
   MERGE INTO frc_event_teams f
   USING results r ON
-    f.team_num = r.team_num AND
-    f.event_key = r.event_key
+    f.event_key = r.event_key AND
+    f.team_num = r.team_num
   WHEN NOT MATCHED THEN
     INSERT VALUES (
-      r.team_num,
-      r.event_key
+      r.event_key,
+      r.team_num
     )
   WHEN MATCHED THEN
     DO NOTHING;
