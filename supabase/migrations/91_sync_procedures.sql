@@ -1,15 +1,3 @@
-CREATE FUNCTION sync.old_seasons()
-RETURNS smallint[]
-STABLE
-LANGUAGE sql
-AS $$
-  SELECT ARRAY(
-    SELECT year
-    FROM frc_seasons
-    WHERE year < sync.current_year()
-  );
-$$;
-
 CREATE FUNCTION sync.current_event_keys()
 RETURNS citext[]
 STABLE
@@ -26,32 +14,44 @@ AS $$
   );
 $$;
 
+CREATE FUNCTION sync.non_current_event_keys(year smallint)
+RETURNS citext[]
+STABLE
+LANGUAGE sql
+AS $$
+  SELECT ARRAY(
+    SELECT
+      event.key
+    FROM frc_events event
+    WHERE
+      event.season = year AND
+      (
+        (SELECT year != sync.current_year()) OR
+        event.key NOT IN (SELECT unnest(sync.current_event_keys()))
+      )
+  );
+$$;
+
 CREATE FUNCTION sync.non_current_event_keys()
 RETURNS citext[]
 STABLE
 LANGUAGE sql
 AS $$
-  SELECT ARRAY(
-    SELECT
-      event.key
-    FROM frc_events event
-    WHERE
-      event.season = sync.current_year() AND
-      event.key NOT IN (SELECT unnest(sync.current_event_keys()))
-  );
+  SELECT sync.non_current_event_keys(sync.current_year());
 $$;
 
-CREATE FUNCTION sync.old_event_keys()
-RETURNS citext[]
+CREATE FUNCTION sync.non_current_years()
+RETURNS smallint[]
 STABLE
 LANGUAGE sql
 AS $$
   SELECT ARRAY(
-    SELECT
-      event.key
-    FROM frc_events event
-    WHERE
-      event.season < sync.current_year()
+    SELECT seasons.year::smallint
+    FROM generate_series(
+      (SELECT min(year) FROM frc_seasons)::integer,
+      (SELECT max(year) FROM frc_seasons)::integer
+    ) seasons(year)
+    WHERE seasons.year != (SELECT sync.current_year())
   );
 $$;
 
