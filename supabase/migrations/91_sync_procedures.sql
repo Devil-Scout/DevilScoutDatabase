@@ -641,15 +641,17 @@ BEGIN
   ARRAY(SELECT request_id FROM requests);
   CALL sync.await_responses(request_ids);
 
+  DROP TABLE IF EXISTS results;
   CREATE TEMP TABLE results AS
   SELECT
     requests.event_key,
-    jsonb_array_elements(response.content::jsonb) AS j
+    jsonb_array_elements(response.content::jsonb->'rankings') AS j
   FROM
     net._http_response response
     JOIN requests ON requests.request_id = response.id
   WHERE
-    response.status_code = 200;
+    response.status_code = 200 AND
+    jsonb_typeof(content::jsonb) != 'null';
 
   -- should never need to delete from rankings...
 
@@ -657,37 +659,25 @@ BEGIN
     SELECT
       event_key,
       substring(r.j->>'team_key' FROM '\d+')::smallint AS team_num,
-      (r.j->>'rank')::smallint AS rank,
-      (r.j->>'matches_played')::smallint AS matches_played,
-      (r.j->>'dq')::smallint AS dq_count,
-      (r.j->'record'->>'losses')::smallint AS losses,
-      (r.j->'record'->>'wins')::smallint AS wins,
-      (r.j->'record'->>'ties')::smallint AS ties
-    FROM results
+      substring(r.j->>'team_key' FROM '[a-zA-Z]*$') AS robot_id,
+      (r.j->>'rank')::smallint AS rank
+    FROM results r
   )
   MERGE INTO frc_event_rankings e
   USING rankings r ON
     e.event_key = r.event_key AND
-    e.team_num = r.team_num
+    e.team_num = r.team_num AND
+    e.robot_id = r.robot_id
   WHEN NOT MATCHED THEN
     INSERT VALUES (
       r.event_key,
       r.team_num,
-      r.rank,
-      r.matches_played,
-      r.dq_count,
-      r.wins,
-      r.losses,
-      r.ties
+      r.robot_id,
+      r.rank
     )
   WHEN MATCHED THEN
     UPDATE SET
-      rank = r.rank,
-      matches_played = r.matches_played,
-      dq_count = r.dq_count,
-      wins = r.wins,
-      losses = r.losses,
-      ties = r.ties;
+      rank = r.rank;
 
   PERFORM
     sync.update_etag(
