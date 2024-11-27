@@ -61,8 +61,9 @@ CREATE FUNCTION sync.extract_match_teams(
 )
 RETURNS TABLE (
   match_key citext,
-  team_num smallint,
   alliance frc_alliance,
+  station smallint,
+  team_num smallint,
   is_surrogate boolean,
   is_disqualified boolean
 )
@@ -80,8 +81,12 @@ AS $$
   )
   SELECT
     match_key::citext,
-    substring(team_key FROM '\d+')::smallint AS team_num,
     alliance_color::frc_alliance AS alliance,
+    substring(team_key FROM '\d+')::smallint AS team_num,
+    array_position(
+      (SELECT array_agg(team_key) FROM s),
+      team_key
+    ) AS station,
     team_key IN (
       SELECT jsonb_array_elements_text(alliance->'surrogate_team_keys')
     ) AS is_surrogate,
@@ -206,30 +211,33 @@ BEGIN
   (
     SELECT * FROM
       sync.extract_match_teams(
-        results,
+        (SELECT array_agg(j) FROM results),
         alliance_color := 'red'
       )
+      WHERE team_num != 0
     UNION SELECT * FROM
       sync.extract_match_teams(
-        results,
+        (SELECT array_agg(j) FROM results),
         alliance_color := 'blue'
       )
+      WHERE team_num != 0
   );
 
   MERGE INTO frc_match_teams f
   USING match_teams m ON
     m.match_key = f.match_key AND
-    m.team_num = f.team_num
+    m.alliance = f.alliance AND
+    m.station = f.station
   -- Need PG 17 for WHEN NOT MATCHED BY SOURCE
   -- Currently handled by following DELETE clause
   WHEN NOT MATCHED THEN
     INSERT
-      (match_key, team_num, alliance, is_surrogate, is_disqualified)
+      (match_key, alliance, station, team_num, is_surrogate, is_disqualified)
     VALUES
-      (m.match_key, m.team_num, m.alliance, m.is_surrogate, m.is_disqualified)
+      (m.match_key, m.alliance, m.station, m.team_num, m.is_surrogate, m.is_disqualified)
   WHEN MATCHED THEN
     UPDATE SET
-      alliance = m.alliance,
+      team_num = m.team_num,
       is_surrogate = m.is_surrogate,
       is_disqualified = m.is_disqualified;
 
@@ -244,7 +252,8 @@ BEGIN
       FROM match_teams
       WHERE
         match_teams.match_key = frc_match_teams.match_key AND
-        match_teams.team_num = frc_match_teams.team_num
+        match_teams.alliance = frc_match_teams.alliance AND
+        match_teams.station = frc_match_teams.station
     );
 
   PERFORM
