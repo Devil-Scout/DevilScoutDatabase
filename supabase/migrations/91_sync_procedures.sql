@@ -467,6 +467,20 @@ BEGIN
 END;
 $$;
 
+CREATE PROCEDURE sync.old_districts()
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  seasons CONSTANT smallint[] := sync.non_current_years();
+  season smallint;
+BEGIN
+  FOREACH season IN ARRAY seasons
+  LOOP
+    CALL sync.districts(season);
+  END LOOP;
+END;
+$$;
+
 CREATE PROCEDURE sync.events(year smallint)
 LANGUAGE plpgsql
 AS $$
@@ -564,6 +578,48 @@ BEGIN
 END;
 $$;
 
+CREATE PROCEDURE sync.old_events()
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  seasons CONSTANT smallint[] := sync.non_current_years();
+  season smallint;
+BEGIN
+  FOREACH season IN ARRAY seasons
+  LOOP
+    CALL sync.events(season);
+  END LOOP;
+END;
+$$;
+
+CREATE PROCEDURE sync.old_event_teams()
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  seasons CONSTANT smallint[] := sync.non_current_years();
+  season smallint;
+BEGIN
+  FOREACH season IN ARRAY seasons
+  LOOP
+    CALL sync.event_teams(sync.non_current_event_keys(season));
+  END LOOP;
+END;
+$$;
+
+CREATE PROCEDURE sync.old_matches()
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  seasons CONSTANT smallint[] := sync.non_current_years();
+  season smallint;
+BEGIN
+  FOREACH season IN ARRAY seasons
+  LOOP
+    CALL sync.matches(sync.non_current_event_keys(season));
+  END LOOP;
+END;
+$$;
+
 CREATE PROCEDURE sync.event_rankings(event_keys citext[])
 LANGUAGE plpgsql
 AS $$
@@ -643,5 +699,19 @@ BEGIN
   DROP TABLE requests;
   DROP TABLE results;
   COMMIT;
+END;
+$$;
+
+CREATE PROCEDURE sync.old_event_rankings()
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  seasons CONSTANT smallint[] := sync.non_current_years();
+  season smallint;
+BEGIN
+  FOREACH  season IN ARRAY seasons
+  LOOP
+    CALL sync.event_rankings(sync.non_current_event_keys(season));
+  END LOOP;
 END;
 $$;
