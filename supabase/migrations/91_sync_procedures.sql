@@ -103,7 +103,6 @@ DECLARE
   endpoint_prefix CONSTANT text := '/event/';
   endpoint_suffix CONSTANT text := '/matches';
   request_ids bigint[];
-  results jsonb[];
 BEGIN
   DROP TABLE IF EXISTS requests;
   CREATE TEMP TABLE requests AS
@@ -118,26 +117,25 @@ BEGIN
   ARRAY(SELECT request_id FROM requests);
   CALL sync.await_responses(request_ids);
 
-  SELECT INTO results
-  ARRAY(
-    SELECT
-      jsonb_array_elements(response.content::jsonb) AS j
-    FROM
-      net._http_response response
-      JOIN requests ON requests.request_id = response.id
-    WHERE
-      response.status_code = 200
-  );
+  DROP TABLE IF EXISTS results;
+  CREATE TEMP TABLE results AS
+  SELECT
+    jsonb_array_elements(response.content::jsonb) AS j
+  FROM
+    net._http_response response
+    JOIN requests ON requests.request_id = response.id
+  WHERE
+    response.status_code = 200;
 
   DELETE FROM frc_matches
   WHERE
     event_key IN (
       SELECT (j->>'event_key')
-      FROM unnest(results) r(j)
+      FROM results
     ) AND
     key NOT IN (
       SELECT (j->>'key')
-      FROM unnest(results) r(j)
+      FROM results
     );
 
   WITH matches AS (
@@ -150,7 +148,7 @@ BEGIN
       to_timestamp((r.j->>'time')::float8) AS scheduled_time,
       to_timestamp((r.j->>'predicted_time')::float8) AS predicted_time,
       to_timestamp((r.j->>'actual_time')::float8) AS actual_time
-    FROM unnest(results) r(j)
+    FROM results r
   )
   MERGE INTO frc_matches f
   USING matches m ON
@@ -184,7 +182,7 @@ BEGIN
       nullif(r.j->>'winning_alliance', '')::frc_alliance AS winning_alliance,
       ARRAY(SELECT jsonb_array_elements(r.j->'videos')) AS videos,
       (r.j->'score_breakdown') AS score_breakdown
-    FROM unnest(results) r(j)
+    FROM results r
   )
   MERGE INTO frc_match_results f
   USING match_results r ON
@@ -264,6 +262,7 @@ BEGIN
   FROM requests;
 
   DROP TABLE requests;
+  DROP TABLE results;
   DROP TABLE match_teams;
   COMMIT;
 END;
