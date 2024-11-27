@@ -125,7 +125,7 @@ CREATE PROCEDURE sync.await_responses(
 LANGUAGE plpgsql
 AS $$
 DECLARE
-  response_id bigint;
+  row RECORD;
 BEGIN
   DROP TABLE IF EXISTS remaining;
   CREATE TEMP TABLE remaining AS
@@ -136,20 +136,20 @@ BEGIN
     -- transactions prevent changes from appearing
     COMMIT;
 
-    -- if a response has an error of any kind, abort
-    SELECT response.id
-    INTO response_id
-    FROM
-      net._http_response response
-      JOIN remaining request ON response.id = request.id
-    WHERE
-      response.timed_out OR
-      response.error_msg IS NOT NULL OR
-      NOT (response.status_code = 200 OR response.status_code = 304)
-    LIMIT 1;
-    IF response_id IS NOT NULL THEN
-      RAISE EXCEPTION 'error from request %', response_id;
-    END IF;
+    -- if a response has an error of any kind, log it
+    FOR row IN (
+      SELECT response.id AS response_id
+      FROM
+        net._http_response response
+        JOIN remaining request ON response.id = request.id
+      WHERE
+        response.timed_out OR
+        response.error_msg IS NOT NULL OR
+        NOT (response.status_code = 200 OR response.status_code = 304)
+    )
+    LOOP
+      RAISE LOG 'error from request %', row.response_id;
+    END LOOP;
 
     -- if a request returned successfully, remove it from remaining
     DELETE FROM remaining
