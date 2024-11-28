@@ -164,9 +164,6 @@ Table frc_matches {
   indexes {
     key [pk]
     (event_key, level, set, number) [unique]
-    (event_key, scheduled_time)
-    (event_key, predicted_time)
-    (event_key, actual_time)
     level
   }
 
@@ -190,8 +187,7 @@ Table frc_match_teams {
 
   indexes {
     (match_key, alliance, station) [pk]
-    (match_key, team_num) // not unique
-    (team_num, match_key) // filter by event using LIKE
+    (team_num, match_key)
   }
 
   Note: 'A team competing in a match'

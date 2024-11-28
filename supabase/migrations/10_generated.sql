@@ -279,15 +279,7 @@ CREATE UNIQUE INDEX ON "frc_match_levels" ("name");
 
 CREATE UNIQUE INDEX ON "frc_matches" ("event_key", "level", "set", "number");
 
-CREATE INDEX ON "frc_matches" ("event_key", "scheduled_time");
-
-CREATE INDEX ON "frc_matches" ("event_key", "predicted_time");
-
-CREATE INDEX ON "frc_matches" ("event_key", "actual_time");
-
 CREATE INDEX ON "frc_matches" ("level");
-
-CREATE INDEX ON "frc_match_teams" ("match_key", "team_num");
 
 CREATE INDEX ON "frc_match_teams" ("team_num", "match_key");
 
