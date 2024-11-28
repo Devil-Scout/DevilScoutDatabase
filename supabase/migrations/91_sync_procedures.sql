@@ -4,8 +4,7 @@ STABLE
 LANGUAGE sql
 AS $$
   SELECT ARRAY(
-    SELECT
-      event.key
+    SELECT event.key
     FROM frc_events event
     WHERE
       event.season = sync.current_year() AND
@@ -14,30 +13,30 @@ AS $$
   );
 $$;
 
-CREATE FUNCTION sync.non_current_event_keys(year smallint)
-RETURNS citext[]
-STABLE
-LANGUAGE sql
-AS $$
-  SELECT ARRAY(
-    SELECT
-      event.key
-    FROM frc_events event
-    WHERE
-      event.season = year AND
-      (
-        (SELECT year != sync.current_year()) OR
-        event.key NOT IN (SELECT unnest(sync.current_event_keys()))
-      )
-  );
-$$;
-
 CREATE FUNCTION sync.non_current_event_keys()
 RETURNS citext[]
 STABLE
 LANGUAGE sql
 AS $$
-  SELECT sync.non_current_event_keys(sync.current_year());
+  SELECT ARRAY(
+    SELECT event.key
+    FROM frc_events event
+    WHERE
+      event.season = (SELECT sync.current_year()) AND
+        event.key NOT IN (SELECT unnest(sync.current_event_keys()))
+  );
+$$;
+
+CREATE FUNCTION sync.event_keys(year smallint)
+RETURNS citext[]
+STABLE
+LANGUAGE sql
+AS $$
+  SELECT ARRAY(
+    SELECT event.key
+    FROM frc_events event
+    WHERE event.season = year
+  );
 $$;
 
 CREATE FUNCTION sync.non_current_years()
@@ -601,7 +600,7 @@ DECLARE
 BEGIN
   FOREACH season IN ARRAY seasons
   LOOP
-    CALL sync.event_teams(sync.non_current_event_keys(season));
+    CALL sync.event_teams(sync.event_keys(season));
   END LOOP;
 END;
 $$;
@@ -615,7 +614,7 @@ DECLARE
 BEGIN
   FOREACH season IN ARRAY seasons
   LOOP
-    CALL sync.matches(sync.non_current_event_keys(season));
+    CALL sync.matches(sync.event_keys(season));
   END LOOP;
 END;
 $$;
@@ -701,7 +700,7 @@ DECLARE
 BEGIN
   FOREACH  season IN ARRAY seasons
   LOOP
-    CALL sync.event_rankings(sync.non_current_event_keys(season));
+    CALL sync.event_rankings(sync.event_keys(season));
   END LOOP;
 END;
 $$;
