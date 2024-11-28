@@ -79,18 +79,23 @@ AS $$
     FROM unnest(results) r(j)
   )
   SELECT
-    match_key::citext,
+    s.match_key::citext,
     alliance_color::frc_alliance AS alliance,
-    substring(team_key FROM '\d+')::smallint AS team_num,
     array_position(
-      (SELECT array_agg(team_key) FROM s),
-      team_key
+      (
+        SELECT array_agg(value::text)
+        FROM jsonb_array_elements_text(
+          s.j->'alliances'->alliance_color->'team_keys'
+        ) AS value
+      ),
+      s.team_key
     ) AS station,
-    team_key IN (
-      SELECT jsonb_array_elements_text(alliance->'surrogate_team_keys')
+    substring(s.team_key FROM '\d+')::smallint AS team_num,
+    s.team_key IN (
+      SELECT jsonb_array_elements_text(s.alliance->'surrogate_team_keys')
     ) AS is_surrogate,
-    team_key IN (
-      SELECT jsonb_array_elements_text(alliance->'dq_team_keys')
+    s.team_key IN (
+      SELECT jsonb_array_elements_text(s.alliance->'dq_team_keys')
     ) AS is_disqualified
   FROM s;
 $$;
