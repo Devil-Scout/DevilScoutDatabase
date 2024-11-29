@@ -75,3 +75,12 @@ SELECT cron.schedule(
   VACUUM ANALYZE;
   $$
 );
+
+SELECT cron.schedule(
+  'clean-cron-job-run-details',
+  '0 6 * * *',
+  $$
+  DELETE FROM cron.job_run_details
+  WHERE end_time < now() - INTERVAL '7 days';
+  $$
+);

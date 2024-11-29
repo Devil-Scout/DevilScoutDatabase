@@ -125,7 +125,6 @@ CREATE TABLE "frc_teams" (
   "province" text,
   "country" text,
   "postal_code" text,
-  "coordinates" point,
   PRIMARY KEY ("number")
 );
 
@@ -176,7 +175,6 @@ CREATE TABLE "frc_match_results" (
 CREATE TABLE "frc_event_rankings" (
   "event_key" citext NOT NULL,
   "team_num" smallint NOT NULL,
-  "robot_id" citext NOT NULL,
   "rank" smallint NOT NULL
 );
 
@@ -257,21 +255,11 @@ CREATE UNIQUE INDEX ON "frc_events" ("season", "code");
 
 CREATE INDEX ON "frc_events" ("season", "type");
 
-CREATE INDEX ON "frc_events" ("season", "name");
-
 CREATE INDEX ON "frc_events" ("season", "country", "province");
 
 CREATE INDEX ON "frc_events" ("season", "start_date", "end_date");
 
 CREATE INDEX ON "frc_events" ("district_key");
-
-CREATE INDEX ON "frc_events" ("type");
-
-CREATE INDEX ON "frc_teams" ("name");
-
-CREATE INDEX ON "frc_teams" ("rookie_season");
-
-CREATE INDEX ON "frc_teams" ("country", "province", "city");
 
 CREATE UNIQUE INDEX ON "frc_event_teams" ("team_num", "event_key");
 
@@ -279,15 +267,11 @@ CREATE UNIQUE INDEX ON "frc_match_levels" ("name");
 
 CREATE UNIQUE INDEX ON "frc_matches" ("event_key", "level", "set", "number");
 
-CREATE INDEX ON "frc_matches" ("level");
-
 CREATE INDEX ON "frc_match_teams" ("team_num", "match_key");
 
-CREATE INDEX ON "frc_event_rankings" ("event_key", "team_num", "robot_id");
-
-CREATE INDEX ON "frc_event_rankings" ("team_num", "event_key");
-
 CREATE INDEX ON "frc_event_rankings" ("event_key", "rank");
+
+CREATE INDEX ON "frc_event_rankings" ("team_num");
 
 CREATE UNIQUE INDEX ON "questions" ("season", "category", "id");
 
@@ -377,7 +361,7 @@ ALTER TABLE "permissions" ADD FOREIGN KEY ("team_num", "granted_by") REFERENCES 
 
 ALTER TABLE "frc_districts" ADD FOREIGN KEY ("season") REFERENCES "frc_seasons" ("year") ON DELETE CASCADE;
 
-ALTER TABLE "frc_events" ADD FOREIGN KEY ("season") REFERENCES "frc_seasons" ("year") ON DELETE RESTRICT;
+ALTER TABLE "frc_events" ADD FOREIGN KEY ("season") REFERENCES "frc_seasons" ("year") ON DELETE CASCADE;
 
 ALTER TABLE "frc_events" ADD FOREIGN KEY ("type") REFERENCES "frc_event_types" ("id") ON DELETE RESTRICT;
 
@@ -396,6 +380,8 @@ ALTER TABLE "frc_matches" ADD FOREIGN KEY ("level") REFERENCES "frc_match_levels
 ALTER TABLE "frc_match_teams" ADD FOREIGN KEY ("match_key") REFERENCES "frc_matches" ("key") ON DELETE CASCADE;
 
 ALTER TABLE "frc_match_results" ADD FOREIGN KEY ("match_key") REFERENCES "frc_matches" ("key") ON DELETE CASCADE;
+
+ALTER TABLE "frc_event_rankings" ADD FOREIGN KEY ("event_key") REFERENCES "frc_events" ("key") ON DELETE CASCADE;
 
 ALTER TABLE "questions" ADD FOREIGN KEY ("parent_id") REFERENCES "questions" ("id") ON DELETE RESTRICT;
 

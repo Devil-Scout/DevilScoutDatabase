@@ -64,8 +64,7 @@ Table frc_events {
   season smallint [not null]
   code citext [not null]
   district_key citext
-  type smallint // -1 -> NULL
-  // worth including playoff type?
+  type smallint
 
   start_date date [not null]
   end_date date [not null]
@@ -85,18 +84,14 @@ Table frc_events {
   indexes {
     key [pk]
     (season, code) [unique]
-    (season, type)
-    (season, name)
-    (season, country, province)
-    (season, start_date, end_date)
+    (type, season)
+    (start_date, end_date)
     district_key // for fk
-    type // for fk
-    // coordinates (type: gist)
   }
 
   Note: 'An event or competition'
 }
-Ref: frc_events.season > frc_seasons.year [delete: restrict]
+Ref: frc_events.season > frc_seasons.year [delete: cascade]
 Ref: frc_events.type > frc_event_types.id [delete: restrict]
 Ref: frc_events.district_key > frc_districts.key [delete: set null]
 
@@ -110,13 +105,9 @@ Table frc_teams {
   province text
   country text
   postal_code text
-  coordinates point
 
   indexes {
     number [pk]
-    name // patch: include number
-    rookie_season // patch: include number
-    (country, province, city)
   }
 
   Note: 'A team competing in a particular season'
@@ -164,13 +155,12 @@ Table frc_matches {
   indexes {
     key [pk]
     (event_key, level, set, number) [unique]
-    level
   }
 
   Note: 'A match at an event'
 }
 Ref: frc_matches.event_key > frc_events.key [delete: cascade]
-Ref: frc_matches.level > frc_match_levels.id [delete: restrict]
+Ref: frc_matches.level > frc_match_levels.id [delete: restrict] // no index, won't change
 
 Enum frc_alliance {
   red
@@ -193,8 +183,7 @@ Table frc_match_teams {
   Note: 'A team competing in a match'
 }
 Ref: frc_match_teams.match_key > frc_matches.key [delete: cascade]
-// Ref: frc_match_teams.team_num > frc_teams.number [delete: cascade]
-// sometimes teams just don't exist
+// no fk for team_num
 
 Table frc_match_results {
   match_key citext [not null]
@@ -215,12 +204,12 @@ Ref: frc_match_results.match_key > frc_matches.key [delete: cascade]
 Table frc_event_rankings {
   event_key citext [not null]
   team_num smallint [not null]
-  robot_id citext [not null]
   rank smallint [not null]
 
   indexes {
-    (event_key, team_num, robot_id) // apparently not unique enough
-    (team_num, event_key)
-    (event_key, rank)
+    (event_key, rank) // not unique (ties)
+    team_num
   }
 }
+Ref: frc_event_rankings.event_key > frc_events.key [delete: cascade]
+// no fk for team num
