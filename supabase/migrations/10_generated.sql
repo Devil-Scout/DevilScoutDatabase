@@ -10,12 +10,6 @@ CREATE TYPE "frc_alliance" AS ENUM (
   'blue'
 );
 
-CREATE TYPE "data_type" AS ENUM (
-  'boolean',
-  'int',
-  'text'
-);
-
 CREATE TABLE "teams" (
   "number" smallint NOT NULL,
   "name" text NOT NULL,
@@ -184,13 +178,6 @@ CREATE TABLE "categories" (
   PRIMARY KEY ("id")
 );
 
-CREATE TABLE "question_types" (
-  "id" citext NOT NULL,
-  "name" text NOT NULL,
-  "type" data_type,
-  PRIMARY KEY ("id")
-);
-
 CREATE TABLE "questions" (
   "id" uuid NOT NULL,
   "parent_id" uuid,
@@ -220,9 +207,7 @@ CREATE TABLE "submissions" (
 CREATE TABLE "submission_data" (
   "submission_id" uuid NOT NULL,
   "question_id" uuid NOT NULL,
-  "value_bool" boolean,
-  "value_int" bigint,
-  "value_text" text[],
+  "data" jsonb NOT NULL,
   PRIMARY KEY ("submission_id", "question_id")
 );
 
@@ -253,11 +238,9 @@ CREATE UNIQUE INDEX ON "frc_districts" ("season", "code");
 
 CREATE UNIQUE INDEX ON "frc_events" ("season", "code");
 
-CREATE INDEX ON "frc_events" ("season", "type");
+CREATE INDEX ON "frc_events" ("type", "season");
 
-CREATE INDEX ON "frc_events" ("season", "country", "province");
-
-CREATE INDEX ON "frc_events" ("season", "start_date", "end_date");
+CREATE INDEX ON "frc_events" ("start_date", "end_date");
 
 CREATE INDEX ON "frc_events" ("district_key");
 
@@ -271,7 +254,7 @@ CREATE INDEX ON "frc_match_teams" ("team_num", "match_key");
 
 CREATE INDEX ON "frc_event_rankings" ("event_key", "rank");
 
-CREATE INDEX ON "frc_event_rankings" ("team_num");
+CREATE INDEX ON "frc_event_rankings" ("team_num", "event_key");
 
 CREATE UNIQUE INDEX ON "questions" ("season", "category", "id");
 
@@ -328,8 +311,6 @@ COMMENT ON TABLE "frc_match_teams" IS 'A team competing in a match';
 COMMENT ON TABLE "frc_match_results" IS 'An official match result from the FMS';
 
 COMMENT ON TABLE "categories" IS 'A type of scouting data users can submit';
-
-COMMENT ON TABLE "question_types" IS 'A type of scouting question shown to the user';
 
 COMMENT ON TABLE "submissions" IS 'A scouting data submission';
 

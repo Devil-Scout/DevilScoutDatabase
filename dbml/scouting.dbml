@@ -1,9 +1,3 @@
-Enum data_type {
-  boolean
-  int
-  text
-}
-
 Table categories {
   id citext [not null]
   has_match bool [not null]
@@ -13,18 +7,6 @@ Table categories {
   }
 
   Note: 'A type of scouting data users can submit'
-}
-
-Table question_types {
-  id citext [not null]
-  name text [not null]
-  type data_type
-
-  indexes {
-    id [pk]
-  }
-
-  Note: 'A type of scouting question shown to the user'
 }
 
 Table questions {
@@ -85,9 +67,7 @@ Ref: submissions.scouted_for > teams.number [delete: set null]
 Table submission_data {
   submission_id uuid [not null]
   question_id uuid [not null]
-  value_bool boolean
-  value_int bigint
-  value_text text[]
+  data jsonb [not null]
 
   indexes {
     (submission_id, question_id) [pk]

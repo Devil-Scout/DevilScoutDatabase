@@ -1,10 +1,3 @@
--- question_types
-GRANT SELECT ON TABLE question_types TO authenticated;
-
-CREATE POLICY "Anyone can SELECT anything"
-ON question_types FOR SELECT TO authenticated
-USING (true);
-
 -- categories
 GRANT SELECT ON TABLE categories TO authenticated;
 

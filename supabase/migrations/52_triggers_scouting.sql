@@ -40,7 +40,6 @@ AS $$
 DECLARE
   submission public.submissions%ROWTYPE;
   question public.questions%ROWTYPE;
-  data_type public.data_type;
 BEGIN
   SELECT * INTO submission
   FROM public.submissions
@@ -49,10 +48,6 @@ BEGIN
   SELECT * INTO question
   FROM public.questions
   WHERE id = NEW.question_id;
-
-  SELECT type INTO data_type
-  FROM public.question_types
-  WHERE id = question.type;
 
   -- ensure question is permitted in this submission
 
@@ -65,23 +60,6 @@ BEGIN
   END IF;
 
   -- Ensure the correct value type was entered
-
-  IF (
-    SELECT COUNT(*)
-    FROM (
-      VALUES (NEW.value_bool, NEW.value_int, NEW.value_text)
-    ) AS v(col)
-    WHERE v.col IS NOT NULL
-  ) != 1 THEN
-    RAISE EXCEPTION 'exactly one value type is required';
-  END IF;
-
-  IF (data_type = 'boolean' AND NEW.value_bool IS NULL) OR
-      (data_type = 'int' AND NEW.value_int IS NULL) OR
-      (data_type = 'text' AND NEW.value_text IS NULL) OR
-      (data_type IS NULL) THEN
-    RAISE EXCEPTION 'incorrect value type for question';
-  END IF;
 
   -- Logic to verify valid values
   -- CASE ...

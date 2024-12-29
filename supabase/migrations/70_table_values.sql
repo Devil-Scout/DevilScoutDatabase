@@ -36,18 +36,6 @@ VALUES
   ('pit', FALSE),
   ('drive_team', TRUE);
 
-INSERT INTO
-  question_types (id, name, type)
-VALUES
-  ('toggle', 'Toggle', 'boolean'),
-  ('counter', 'Counter', 'int'),
-  ('number', 'Number Input', 'int'),
-  ('range', 'Range', 'int'),
-  ('checkboxes', 'Checkboxes', 'text'),
-  ('dropdown', 'Dropdown', 'text'),
-  ('radio', 'Radio', 'text'),
-  ('group', 'Group', NULL);
-
 INSERT INTO frc_event_types
   (id, is_district, is_championship, is_division, is_offseason, name, name_short)
 VALUES
