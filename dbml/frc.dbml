@@ -208,7 +208,7 @@ Table frc_event_rankings {
 
   indexes {
     (event_key, rank) // not unique (ties)
-    team_num
+    (team_num, event_key)
   }
 }
 Ref: frc_event_rankings.event_key > frc_events.key [delete: cascade]

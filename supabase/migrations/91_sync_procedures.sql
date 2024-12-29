@@ -651,7 +651,11 @@ BEGIN
     response.status_code = 200 AND
     jsonb_typeof(content::jsonb) != 'null';
 
-  -- should never need to delete from rankings...
+  DELETE FROM frc_event_rankings
+  WHERE
+    event_key IN (
+      SELECT event_key FROM results
+    );
 
   WITH rankings AS (
     SELECT
@@ -660,19 +664,12 @@ BEGIN
       (r.j->>'rank')::smallint AS rank
     FROM results r
   )
-  MERGE INTO frc_event_rankings e
-  USING rankings r ON
-    e.event_key = r.event_key AND
-    e.team_num = r.team_num
-  WHEN NOT MATCHED THEN
-    INSERT VALUES (
-      r.event_key,
-      r.team_num,
-      r.rank
-    )
-  WHEN MATCHED THEN
-    UPDATE SET
-      rank = r.rank;
+  INSERT INTO frc_event_rankings
+  SELECT
+    event_key,
+    team_num,
+    rank
+  FROM rankings;
 
   PERFORM
     sync.update_etag(
