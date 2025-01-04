@@ -1,9 +1,15 @@
 -- teams -------------------------------
-GRANT SELECT, UPDATE(name) ON TABLE teams TO authenticated;
+GRANT SELECT, INSERT(number, name), UPDATE(name) ON TABLE teams TO authenticated;
 
 CREATE POLICY "Anyone can SELECT any team"
 ON teams FOR SELECT TO authenticated
 USING (true);
+
+CREATE POLICY "Users not on a team can INSERT a new team"
+ON teams FOR INSERT TO authenticated
+WITH CHECK (
+  (SELECT get_team_num() IS NULL)
+);
 
 CREATE POLICY "'manage_team' can UPDATE their team"
 ON teams FOR UPDATE TO authenticated
@@ -16,7 +22,7 @@ USING (
 );
 
 -- users -------------------------------
-GRANT SELECT, INSERT(name), UPDATE(name) ON TABLE users TO authenticated;
+GRANT SELECT ON TABLE users TO authenticated;
 
 CREATE POLICY "Anyone can SELECT their team's members"
 ON users FOR SELECT TO authenticated
@@ -24,16 +30,11 @@ USING (
   is_user_on_same_team(users.id)
 );
 
-CREATE POLICY "Anyone can SELECT, INSERT, or UPDATE themself"
-ON users TO authenticated
-USING (
-  id = (SELECT auth.uid())
-)
-WITH CHECK (
-  -- Controlled by BEFORE INSERT
-  -- id = (SELECT auth.uid())
-  true
-);
+GRANT ALL ON TABLE users TO supabase_auth_admin;
+
+CREATE POLICY "Supabase Auth can read/write users"
+ON users FOR ALL TO supabase_auth_admin
+USING (true);
 
 -- team_users --------------------------
 GRANT SELECT, DELETE, INSERT (user_id, team_num) ON TABLE team_users TO authenticated;

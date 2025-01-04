@@ -1,18 +1,6 @@
-Table teams {
-  number smallint [not null]
-  name text [not null]
-  created_at timestamptz [not null]
-
-  indexes {
-    number [pk] // patch: include (name)
-  }
-
-  Note: 'A team utilizing the platform'
-}
-
 Table users {
   id uuid [not null]
-  name text [not null]
+  name text
   created_at timestamptz [not null]
 
   indexes {
@@ -21,6 +9,20 @@ Table users {
 
   Note: 'A user of the platform'
 }
+
+Table teams {
+  number smallint [not null]
+  name text [not null]
+  created_at timestamptz [not null]
+  created_by uuid
+
+  indexes {
+    number [pk] // patch: include (name)
+  }
+
+  Note: 'A team utilizing the platform'
+}
+Ref: teams.created_by > users.id [delete: set null]
 
 Table team_users {
   user_id uuid [not null]

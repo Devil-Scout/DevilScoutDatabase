@@ -10,18 +10,19 @@ CREATE TYPE "frc_alliance" AS ENUM (
   'blue'
 );
 
+CREATE TABLE "users" (
+  "id" uuid NOT NULL,
+  "name" text,
+  "created_at" timestamptz NOT NULL,
+  PRIMARY KEY ("id")
+);
+
 CREATE TABLE "teams" (
   "number" smallint NOT NULL,
   "name" text NOT NULL,
   "created_at" timestamptz NOT NULL,
-  PRIMARY KEY ("number") INCLUDE (name)
-);
-
-CREATE TABLE "users" (
-  "id" uuid NOT NULL,
-  "name" text NOT NULL,
-  "created_at" timestamptz NOT NULL,
-  PRIMARY KEY ("id") INCLUDE (name)
+  "created_by" uuid,
+  PRIMARY KEY ("number")
 );
 
 CREATE TABLE "team_users" (
@@ -215,7 +216,7 @@ CREATE TABLE "sync"."etags" (
   "key" text NOT NULL,
   "value" text NOT NULL,
   "modified_at" timestamptz NOT NULL,
-  PRIMARY KEY ("key") INCLUDE (value)
+  PRIMARY KEY ("key")
 );
 
 CREATE UNIQUE INDEX ON "team_users" ("team_num", "user_id");
@@ -276,9 +277,9 @@ CREATE INDEX ON "submissions" ("scouted_by");
 
 CREATE INDEX ON "submissions" ("scouted_for");
 
-COMMENT ON TABLE "teams" IS 'A team utilizing the platform';
-
 COMMENT ON TABLE "users" IS 'A user of the platform';
+
+COMMENT ON TABLE "teams" IS 'A team utilizing the platform';
 
 COMMENT ON TABLE "team_users" IS 'A user''s association with a team';
 
@@ -317,6 +318,8 @@ COMMENT ON TABLE "submissions" IS 'A scouting data submission';
 COMMENT ON TABLE "submission_data" IS 'A submission''s scouting data';
 
 COMMENT ON TABLE "sync"."etags" IS 'A TBA ETag to reduce network traffic';
+
+ALTER TABLE "teams" ADD FOREIGN KEY ("created_by") REFERENCES "users" ("id") ON DELETE SET NULL;
 
 ALTER TABLE "team_users" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE;
 

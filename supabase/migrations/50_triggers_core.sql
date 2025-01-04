@@ -12,6 +12,7 @@ LANGUAGE plpgsql
 AS $$
 BEGIN
   NEW.created_at := now();
+  NEW.created_by := auth.uid();
   RETURN NEW;
 END;
 $$;
@@ -25,26 +26,54 @@ BEFORE INSERT ON
 FOR EACH ROW EXECUTE PROCEDURE
   insert_team();
 
--- users
-CREATE FUNCTION insert_user()
+-- auth.users
+-- users table is read-only for clients
+CREATE FUNCTION insert_users()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
 BEGIN
-  NEW.id := COALESCE(auth.uid(), NEW.id);
-  NEW.created_at := now();
+  INSERT INTO public.users
+    (id, name, created_at) VALUES
+    (
+      NEW.id,
+      NEW.raw_user_meta_data->>'full_name',
+      NEW.created_at
+    );
   RETURN NEW;
 END;
 $$;
 
-REVOKE EXECUTE ON FUNCTION insert_user FROM public, anon;
+CREATE FUNCTION update_users()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  UPDATE public.users
+    SET
+      name = NEW.raw_user_meta_data->>'full_name'
+    WHERE
+      id = NEW.id;
+  RETURN NEW;
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION insert_users FROM public, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION update_users FROM public, anon, authenticated;
 
 CREATE TRIGGER
   on_insert
-BEFORE INSERT ON
-  users
+AFTER INSERT ON
+  auth.users
 FOR EACH ROW EXECUTE PROCEDURE
-  insert_user();
+  insert_users();
+
+CREATE TRIGGER
+  on_update
+AFTER UPDATE ON
+  auth.users
+FOR EACH ROW EXECUTE PROCEDURE
+  update_users();
 
 -- team_users
 CREATE FUNCTION insert_team_users()

@@ -1,22 +1,4 @@
 @@ -0,7 +0,7 @@
-   "number" smallint NOT NULL,
-   "name" text NOT NULL,
-   "created_at" timestamptz NOT NULL,
--  PRIMARY KEY ("number")
-+  PRIMARY KEY ("number") INCLUDE (name)
- );
-
- CREATE TABLE "users" (
-@@ -0,7 +0,7 @@
-   "id" uuid NOT NULL,
-   "name" text NOT NULL,
-   "created_at" timestamptz NOT NULL,
--  PRIMARY KEY ("id")
-+  PRIMARY KEY ("id") INCLUDE (name)
- );
-
- CREATE TABLE "team_users" (
-@@ -0,7 +0,7 @@
    "team_num" smallint NOT NULL,
    "added_by" uuid NOT NULL,
    "added_at" timestamptz NOT NULL,
@@ -25,15 +7,6 @@
  );
 
  CREATE TABLE "team_requests" (
-@@ -0,7 +0,7 @@
-   "key" text NOT NULL,
-   "value" text NOT NULL,
-   "modified_at" timestamptz NOT NULL,
--  PRIMARY KEY ("key")
-+  PRIMARY KEY ("key") INCLUDE (value)
- );
-
-
 @@ -0,1 +0,1 @@
 -CREATE INDEX ON "team_requests" ("team_num", "requested_at");
 +CREATE INDEX ON "team_requests" ("team_num", "requested_at") INCLUDE (user_id);
