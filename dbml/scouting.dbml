@@ -6,20 +6,29 @@ Table categories {
     id [pk]
   }
 
-  Note: 'A type of scouting data users can submit'
+  Note: 'A class of scouting data users can submit'
+}
+
+Table data_types {
+  id citext [not null]
+
+  indexes {
+    id [pk]
+  }
 }
 
 Table questions {
-  id uuid [not null]
+  id uuid [not null, default: `gen_random_uuid()`]
+
   parent_id uuid
   index smallint [not null]
 
   season smallint [not null]
   category citext [not null]
-  type citext [not null]
+
+  data_type citext
   prompt text
   config jsonb
-  info_path text
 
   indexes {
     id [pk]
@@ -31,6 +40,7 @@ Table questions {
 Ref: questions.parent_id > questions.id [delete: restrict]
 Ref: questions.season > frc_seasons.year [delete: restrict]
 Ref: questions.category > categories.id [delete: restrict]
+Ref: questions.data_type > data_types.id [delete: restrict]
 
 Table submissions {
   id uuid [not null]

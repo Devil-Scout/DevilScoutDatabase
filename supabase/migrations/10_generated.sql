@@ -179,16 +179,20 @@ CREATE TABLE "categories" (
   PRIMARY KEY ("id")
 );
 
+CREATE TABLE "data_types" (
+  "id" citext NOT NULL,
+  PRIMARY KEY ("id")
+);
+
 CREATE TABLE "questions" (
-  "id" uuid NOT NULL,
+  "id" uuid NOT NULL DEFAULT (gen_random_uuid()),
   "parent_id" uuid,
   "index" smallint NOT NULL,
   "season" smallint NOT NULL,
   "category" citext NOT NULL,
-  "type" citext NOT NULL,
+  "data_type" citext,
   "prompt" text,
   "config" jsonb,
-  "info_path" text,
   PRIMARY KEY ("id")
 );
 
@@ -311,7 +315,7 @@ COMMENT ON TABLE "frc_match_teams" IS 'A team competing in a match';
 
 COMMENT ON TABLE "frc_match_results" IS 'An official match result from the FMS';
 
-COMMENT ON TABLE "categories" IS 'A type of scouting data users can submit';
+COMMENT ON TABLE "categories" IS 'A class of scouting data users can submit';
 
 COMMENT ON TABLE "submissions" IS 'A scouting data submission';
 
@@ -372,6 +376,8 @@ ALTER TABLE "questions" ADD FOREIGN KEY ("parent_id") REFERENCES "questions" ("i
 ALTER TABLE "questions" ADD FOREIGN KEY ("season") REFERENCES "frc_seasons" ("year") ON DELETE RESTRICT;
 
 ALTER TABLE "questions" ADD FOREIGN KEY ("category") REFERENCES "categories" ("id") ON DELETE RESTRICT;
+
+ALTER TABLE "questions" ADD FOREIGN KEY ("data_type") REFERENCES "data_types" ("id") ON DELETE RESTRICT;
 
 ALTER TABLE "submissions" ADD FOREIGN KEY ("category") REFERENCES "categories" ("id") ON DELETE RESTRICT;
 
