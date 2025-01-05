@@ -1,10 +1,10 @@
 Table users {
   id uuid [not null]
-  name text
   created_at timestamptz [not null]
+  name text
 
   indexes {
-    id [pk] // patch: include (name)
+    id [pk]
   }
 
   Note: 'A user of the platform'
@@ -12,13 +12,13 @@ Table users {
 
 Table teams {
   number smallint [not null]
-  name text [not null]
+  verified boolean [not null, default: false]
   created_at timestamptz [not null]
   created_by uuid
-  verified boolean [not null, default: false]
+  name text [not null]
 
   indexes {
-    number [pk] // patch: include (name)
+    number [pk]
   }
 
   Note: 'A team utilizing the platform'
@@ -28,8 +28,8 @@ Ref: teams.created_by > users.id [delete: set null]
 Table team_users {
   user_id uuid [not null]
   team_num smallint [not null]
-  added_by uuid
   added_at timestamptz [not null]
+  added_by uuid
 
   indexes {
     user_id [pk] // patch: include (team_num)
@@ -46,8 +46,8 @@ Ref: team_users.added_by > users.id [delete: set null]
 
 Table team_requests {
   user_id uuid [not null]
-  team_num smallint [not null]
   requested_at timestamptz [not null]
+  team_num smallint [not null]
 
   indexes {
     user_id [pk]
@@ -89,9 +89,9 @@ Table permission_types {
 Table permissions {
   user_id uuid [not null]
   team_num smallint [not null]
-  type citext [not null]
-  granted_by uuid
   granted_at timestamptz [not null]
+  granted_by uuid
+  type citext [not null]
 
   indexes {
     (user_id, type) [pk]

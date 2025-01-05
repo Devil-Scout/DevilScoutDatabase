@@ -1,32 +1,24 @@
-Table categories {
-  id citext [not null]
-  has_match bool [not null]
-
-  indexes {
-    id [pk]
-  }
-
-  Note: 'A class of scouting data users can submit'
+Enum scouting_category {
+  match
+  pit
+  drive_team
 }
 
-Table data_types {
-  id citext [not null]
-
-  indexes {
-    id [pk]
-  }
+Enum data_type {
+  "boolean"
+  "number"
+  "string"
+  "string[]"
 }
 
 Table questions {
   id uuid [not null, default: `gen_random_uuid()`]
-
-  parent_id uuid
-  index smallint [not null]
-
+  category scouting_category [not null]
   season smallint [not null]
-  category citext [not null]
+  index smallint
+  parent_id uuid
 
-  data_type citext
+  data_type data_type
   prompt text
   config jsonb
 
@@ -34,29 +26,25 @@ Table questions {
     id [pk]
     (season, category)
     (parent_id, index) [unique]
-    category // for fk
   }
 }
-Ref: questions.parent_id > questions.id [delete: restrict]
+Ref: questions.parent_id > questions.id [delete: cascade]
 Ref: questions.season > frc_seasons.year [delete: restrict]
-Ref: questions.category > categories.id [delete: restrict]
-Ref: questions.data_type > data_types.id [delete: restrict]
 
 Table submissions {
   id uuid [not null]
-  category citext [not null]
+  category scouting_category [not null]
   season smallint [not null]
-  event_key citext [not null]
-  match_key citext
   team_num smallint [not null]
+  created_at timestamptz [not null]
   scouted_by uuid
   scouted_for smallint
-  created_at timestamptz [not null]
+  event_key citext [not null]
+  match_key citext
 
   indexes {
     id [pk]
-    season
-    category
+    (season, category)
     event_key
     (match_key, team_num)
     team_num
@@ -66,7 +54,6 @@ Table submissions {
 
   Note: 'A scouting data submission'
 }
-Ref: submissions.category > categories.id [delete: restrict]
 Ref: submissions.event_key > frc_events.key [delete: restrict]
 Ref: submissions.match_key > frc_matches.key [delete: restrict]
 Ref: submissions.season > frc_seasons.year [delete: restrict]
@@ -77,14 +64,16 @@ Ref: submissions.scouted_for > teams.number [delete: set null]
 Table submission_data {
   submission_id uuid [not null]
   question_id uuid [not null]
+  data_type data_type [not null]
   data jsonb [not null]
 
   indexes {
     (submission_id, question_id) [pk]
-    // for querying data (not allowed in dbml):
-    // - (question_id, value_bool) WHERE value_bool IS NOT NULL
-    // - (question_id, value_int) WHERE value_int IS NOT NULL
-    // - (question_id, value_text) [type: gin] WHERE value_text IS NOT NULL
+    // conditional indexes based on data type:
+    // (question_id, data::numeric) if number
+    // (question_id, data::boolean) if boolean
+    // (question_id, data::text) if string
+    // (question_id, data) [gin, default] if string[]
   }
 
   Note: 'A submission\'s scouting data'

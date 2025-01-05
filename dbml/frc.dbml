@@ -1,8 +1,8 @@
 // Hidden from clients
 Table sync.etags {
+  modified_at timestamptz [not null]
   key text [not null]
   value text [not null]
-  modified_at timestamptz [not null]
 
   indexes {
     key [pk] // patch: include value
@@ -24,8 +24,8 @@ Table frc_seasons {
 }
 
 Table frc_districts {
-  key citext [not null]
   season smallint [not null]
+  key citext [not null]
   code citext [not null]
   name text [not null]
 
@@ -56,30 +56,28 @@ Table frc_event_types {
 }
 
 Table frc_events {
-  key citext [not null]
-
-  name text [not null]
-  name_short text
-
   season smallint [not null]
-  code citext [not null]
-  district_key citext
-  type smallint
-
+  type smallint [not null]
   start_date date [not null]
   end_date date [not null]
-  timezone text
+  coordinates point
   week smallint
 
-  website text
+  key citext [not null]
+  code citext [not null]
+  name text [not null]
+  name_short text
+  district_key citext
 
-  location text
-  address text
-  city text
-  province text
+  timezone text
   country text
+  province text
+  city text
+  address text
+  location text
+
+  website text
   postal_code citext
-  coordinates point
 
   indexes {
     key [pk]
@@ -97,14 +95,14 @@ Ref: frc_events.district_key > frc_districts.key [delete: set null]
 
 Table frc_teams {
   number smallint [not null]
-  name text [not null]
   rookie_season smallint
-  website text
+  name text [not null]
 
-  city text
-  province text
   country text
+  province text
+  city text
   postal_code text
+  website text
 
   indexes {
     number [pk]
@@ -115,8 +113,8 @@ Table frc_teams {
 Ref: frc_teams.rookie_season > frc_seasons.year [delete: restrict]
 
 Table frc_event_teams {
-  event_key citext [not null]
   team_num smallint [not null]
+  event_key citext [not null]
 
   indexes {
     (event_key, team_num) [pk]
@@ -142,15 +140,15 @@ Table frc_match_levels {
 }
 
 Table frc_matches {
-  key citext [not null]
-  event_key citext [not null]
-  level citext [not null]
-  set smallint [not null]
   number smallint [not null]
+  set smallint [not null]
+  level citext [not null]
+  event_key citext [not null]
+  key citext [not null]
 
-  scheduled_time timestamptz
-  predicted_time timestamptz
-  actual_time timestamptz
+  scheduled_time timestamptz // 25%
+  predicted_time timestamptz // 50%
+  actual_time timestamptz // 50%
 
   indexes {
     key [pk]
@@ -168,12 +166,12 @@ Enum frc_alliance {
 }
 
 Table frc_match_teams {
-  match_key citext [not null]
-  alliance frc_alliance [not null]
-  station smallint [not null]
   team_num smallint [not null]
+  station smallint [not null]
+  alliance frc_alliance [not null]
   is_surrogate boolean [not null]
   is_disqualified boolean [not null]
+  match_key citext [not null]
 
   indexes {
     (match_key, alliance, station) [pk]
@@ -186,10 +184,10 @@ Ref: frc_match_teams.match_key > frc_matches.key [delete: cascade]
 // no fk for team_num
 
 Table frc_match_results {
-  match_key citext [not null]
   red_score smallint [not null]
   blue_score smallint [not null]
   winning_alliance frc_alliance
+  match_key citext [not null]
   videos jsonb[] [not null]
   score_breakdown jsonb
 
@@ -202,9 +200,9 @@ Table frc_match_results {
 Ref: frc_match_results.match_key > frc_matches.key [delete: cascade]
 
 Table frc_event_rankings {
-  event_key citext [not null]
   team_num smallint [not null]
   rank smallint [not null]
+  event_key citext [not null]
 
   indexes {
     (event_key, rank) // not unique (ties)

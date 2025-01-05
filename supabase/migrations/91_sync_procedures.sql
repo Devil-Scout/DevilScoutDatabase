@@ -505,7 +505,7 @@ BEGIN
       (r.j->>'year')::smallint AS season,
       (r.j->>'event_code')::citext AS code,
       (r.j->'district'->>'key')::citext AS district_key,
-      nullif((r.j->>'event_type')::smallint, -1) AS type,
+      (r.j->>'event_type')::smallint AS type,
       (r.j->>'start_date')::date AS start_date,
       (r.j->>'end_date')::date AS end_date,
       (r.j->>'timezone') AS timezone,

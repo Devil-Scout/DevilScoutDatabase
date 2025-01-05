@@ -30,13 +30,6 @@ if echo "$SQL" | grep "dbml-error" >/dev/null; then
 fi
 echo "$SQL" >> "$tmpsql"
 
-# Apply the patch files
-echo "Patches:"
-for file in $(find "$ROOT_DIR/dbml" -name "*.patch" | sort); do
-  echo "- dbml/$(basename "$file")"
-  patch -us "$tmpsql" "$file"
-done
-
 # Write the result
 output="supabase/migrations/10_generated.sql"
 cat "$tmpsql" > "$ROOT_DIR/$output"
