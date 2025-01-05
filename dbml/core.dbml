@@ -15,6 +15,7 @@ Table teams {
   name text [not null]
   created_at timestamptz [not null]
   created_by uuid
+  verified boolean [not null, default: false]
 
   indexes {
     number [pk] // patch: include (name)
@@ -87,8 +88,8 @@ Table permission_types {
 
 Table permissions {
   user_id uuid [not null]
-  type citext [not null]
   team_num smallint [not null]
+  type citext [not null]
   granted_by uuid
   granted_at timestamptz [not null]
 

@@ -6,7 +6,7 @@
 -- This allows null ids (where applicable) by simply omitting them
 
 -- teams
-CREATE FUNCTION insert_team()
+CREATE FUNCTION pre_insert_team()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
@@ -17,14 +17,75 @@ BEGIN
 END;
 $$;
 
-REVOKE EXECUTE ON FUNCTION insert_team FROM public, anon, authenticated;
+CREATE FUNCTION post_insert_team()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  IF auth.uid() IS NOT NULL
+  THEN
+    -- Make the user a member
+    INSERT INTO team_users
+      (user_id, team_num) VALUES
+      (auth.uid(), NEW.number);
+
+    -- Grant them all permissions
+    INSERT INTO permissions
+      (user_id, team_num, type)
+      (
+        SELECT
+          (SELECT auth.uid()),
+          NEW.number,
+          id
+        FROM permission_types
+      );
+  END IF;
+
+  IF NOT NEW.verified
+  THEN
+    -- Notify developers of new unverified team via email
+    PERFORM net.http_post(
+      url := 'https://api.resend.com/emails',
+      body := jsonb_build_object(
+        'from', 'Devil Scout Notifier <notify@devilscout.org>',
+        'to', 'devilscoutfrc@gmail.com',
+        'subject', 'Unverified Team Created',
+        'html', format(
+          '<p>Dear Developer,</p>'
+          '<p>A user just registered team %s, which is marked as unverified in the database. Please review the team''s owner and mark the team as verified.</p>'
+          '<p>Best, Devil Scout''s Database</p>', NEW.number
+        )
+      ),
+      headers := jsonb_build_object(
+        'Authorization', 'Bearer ' || (
+          SELECT decrypted_secret
+          FROM vault.decrypted_secrets
+          WHERE name = 'resend_api_key'
+        )
+      )
+    );
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION pre_insert_team FROM public, anon;
+REVOKE EXECUTE ON FUNCTION post_insert_team FROM public, anon;
 
 CREATE TRIGGER
-  on_insert
+  pre_insert
 BEFORE INSERT ON
   teams
 FOR EACH ROW EXECUTE PROCEDURE
-  insert_team();
+  pre_insert_team();
+
+CREATE TRIGGER
+  post_insert
+BEFORE INSERT ON
+  teams
+FOR EACH ROW EXECUTE PROCEDURE
+  post_insert_team();
 
 -- auth.users
 -- users table is read-only for clients
