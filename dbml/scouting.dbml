@@ -32,7 +32,7 @@ Table questions {
 
   indexes {
     id [pk]
-    (season, category, id) [unique]
+    (season, category)
     (parent_id, index) [unique]
     category // for fk
   }

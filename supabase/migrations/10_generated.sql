@@ -261,7 +261,7 @@ CREATE INDEX ON "frc_event_rankings" ("event_key", "rank");
 
 CREATE INDEX ON "frc_event_rankings" ("team_num", "event_key");
 
-CREATE UNIQUE INDEX ON "questions" ("season", "category", "id");
+CREATE INDEX ON "questions" ("season", "category");
 
 CREATE UNIQUE INDEX ON "questions" ("parent_id", "index");
 
