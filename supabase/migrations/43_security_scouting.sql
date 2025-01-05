@@ -5,6 +5,13 @@ CREATE POLICY "Anyone can SELECT anything"
 ON categories FOR SELECT TO authenticated
 USING (true);
 
+-- data_types
+GRANT SELECT ON TABLE data_types TO authenticated;
+
+CREATE POLICY "Anyone can SELECT anything"
+ON data_types FOR SELECT TO authenticated
+USING (true);
+
 -- questions
 GRANT SELECT ON TABLE questions TO authenticated;
 
