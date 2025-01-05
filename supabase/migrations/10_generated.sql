@@ -22,6 +22,7 @@ CREATE TABLE "teams" (
   "name" text NOT NULL,
   "created_at" timestamptz NOT NULL,
   "created_by" uuid,
+  "verified" boolean NOT NULL DEFAULT false,
   PRIMARY KEY ("number")
 );
 
@@ -56,8 +57,8 @@ CREATE TABLE "permission_types" (
 
 CREATE TABLE "permissions" (
   "user_id" uuid NOT NULL,
-  "type" citext NOT NULL,
   "team_num" smallint NOT NULL,
+  "type" citext NOT NULL,
   "granted_by" uuid,
   "granted_at" timestamptz NOT NULL,
   PRIMARY KEY ("user_id", "type")
