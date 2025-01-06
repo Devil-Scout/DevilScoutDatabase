@@ -29,13 +29,6 @@ VALUES
     '- Manage sharing lists with other teams'
   );
 
-INSERT INTO
-  categories (id, has_match)
-VALUES
-  ('match', TRUE),
-  ('pit', FALSE),
-  ('drive_team', TRUE);
-
 INSERT INTO frc_event_types
   (id, is_district, is_championship, is_division, is_offseason, name, name_short)
 VALUES

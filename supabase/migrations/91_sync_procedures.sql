@@ -158,7 +158,17 @@ BEGIN
   USING matches m ON
     f.key = m.key
   WHEN NOT MATCHED THEN
-    INSERT VALUES (
+    INSERT (
+      key,
+      event_key,
+      level,
+      set,
+      number,
+      scheduled_time,
+      predicted_time,
+      actual_time
+    )
+    VALUES (
       m.key,
       m.event_key,
       m.level,
@@ -192,7 +202,15 @@ BEGIN
   USING match_results r ON
     f.match_key = r.match_key
   WHEN NOT MATCHED THEN
-    INSERT VALUES (
+    INSERT (
+      match_key,
+      red_score,
+      blue_score,
+      winning_alliance,
+      videos,
+      score_breakdown
+    )
+    VALUES (
       r.match_key,
       r.red_score,
       r.blue_score,
@@ -313,7 +331,8 @@ BEGIN
     f.event_key = r.event_key AND
     f.team_num = r.team_num
   WHEN NOT MATCHED THEN
-    INSERT VALUES (
+    INSERT (event_key, team_num)
+    VALUES (
       r.event_key,
       r.team_num
     )
@@ -388,7 +407,16 @@ BEGIN
   USING teams t ON
     f.number = t.number
   WHEN NOT MATCHED THEN
-    INSERT VALUES (
+    INSERT (
+      number,
+      name,
+      rookie_season,
+      website,
+      city,
+      province,
+      country,
+      postal_code
+    ) VALUES (
       t.number,
       t.name,
       t.rookie_season,
@@ -447,7 +475,12 @@ BEGIN
   USING districts d ON
     f.key = d.key
   WHEN NOT MATCHED THEN
-    INSERT VALUES (
+    INSERT (
+      key,
+      season,
+      code,
+      name
+    ) VALUES (
       d.key,
       d.season,
       d.code,
@@ -527,7 +560,27 @@ BEGIN
   USING events e ON
     e.key = f.key
   WHEN NOT MATCHED THEN
-    INSERT VALUES (
+    INSERT (
+      key,
+      name,
+      name_short,
+      season,
+      code,
+      district_key,
+      type,
+      start_date,
+      end_date,
+      timezone,
+      week,
+      website,
+      location,
+      address,
+      city,
+      province,
+      country,
+      postal_code,
+      coordinates
+    ) VALUES (
       e.key,
       e.name,
       e.name_short,
@@ -665,6 +718,7 @@ BEGIN
     FROM results r
   )
   INSERT INTO frc_event_rankings
+    (event_key, team_num, rank)
   SELECT
     event_key,
     team_num,
