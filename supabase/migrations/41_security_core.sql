@@ -16,18 +16,31 @@ ON teams FOR UPDATE TO authenticated
 USING (
   (SELECT has_permission('manage_team'))
   AND
-  (SELECT is_not_disabled())
-  AND
   number = (SELECT get_team_num())
 );
 
 -- users -------------------------------
 GRANT SELECT ON TABLE users TO authenticated;
 
-CREATE POLICY "Anyone can SELECT their team's members"
+CREATE POLICY "Anyone can SELECT themself or their team's members"
 ON users FOR SELECT TO authenticated
 USING (
+  users.id = (SELECT auth.uid())
+  OR
   is_user_on_same_team(users.id)
+);
+
+CREATE POLICY "'manage_team' can SELECT users requesting their team"
+ON users FOR SELECT TO authenticated
+USING (
+  (SELECT has_permission('manage_team'))
+  AND
+  EXISTS (
+    SELECT 1 FROM team_requests
+      WHERE
+        team_requests.user_id = users.id AND
+        team_requests.team_num = (SELECT get_team_num())
+  )
 );
 
 GRANT ALL ON TABLE users TO supabase_auth_admin;
@@ -51,12 +64,16 @@ USING (
   user_id = (SELECT auth.uid())
 );
 
+CREATE POLICY "'manage_team' can DELETE users from their team"
+ON team_users FOR DELETE TO authenticated
+USING (
+  team_num = (SELECT get_team_num())
+);
+
 CREATE POLICY "'manage_team' can INSERT users by request"
 ON team_users FOR INSERT TO authenticated
 WITH CHECK (
   (SELECT has_permission('manage_team'))
-  AND
-  (SELECT is_not_disabled())
   AND
   (
     SELECT
@@ -65,12 +82,6 @@ WITH CHECK (
       team_requests
     WHERE team_requests.user_id = team_users.user_id
   ) = (SELECT get_team_num())
-  AND
-  -- Controlled by BEFORE INSERT trigger
-  -- team_num = (SELECT get_team_num())
-  -- AND
-  -- team_users.added_by = (SELECT auth.uid())
-  true
 );
 
 -- team_requests -----------------------
@@ -82,20 +93,14 @@ USING (
   user_id = (SELECT auth.uid())
 )
 WITH CHECK(
-  -- Can only join a team if you aren't on a team
+  -- Not on a team already
   (SELECT get_team_num() IS NULL)
-  AND
-  -- Controlled by BEFORE INSERT trigger
-  -- user_id = (SELECT auth.uid())
-  true
 );
 
 CREATE POLICY "'manage_team' can SELECT requests"
 ON team_requests FOR SELECT TO authenticated
 USING (
   (SELECT has_permission('manage_team'))
-  AND
-  (SELECT is_not_disabled())
   AND
   team_num = (SELECT get_team_num())
 );
@@ -105,35 +110,7 @@ ON team_requests FOR DELETE TO authenticated
 USING (
   (SELECT has_permission('manage_team'))
   AND
-  (SELECT is_not_disabled())
-  AND
   team_num = (SELECT get_team_num())
-);
-
--- disabled_users ----------------------
-GRANT SELECT, DELETE, INSERT(user_id) ON TABLE disabled_users TO authenticated;
-
-CREATE POLICY "Anyone can SELECT their own entry"
-ON disabled_users FOR SELECT TO authenticated
-USING (
-  user_id = (SELECT auth.uid())
-);
-
-CREATE POLICY "'manage_team' can SELECT, INSERT, or DELETE entries"
-ON disabled_users TO authenticated
-USING (
-  (SELECT has_permission('manage_team'))
-  AND
-  (SELECT is_not_disabled())
-  AND
-  is_user_on_same_team(disabled_users.user_id)
-)
-WITH CHECK (
-  (SELECT has_permission('manage_team'))
-  AND
-  (SELECT is_not_disabled())
-  AND
-  is_user_on_same_team(disabled_users.user_id)
 );
 
 -- permission_types --------------------
@@ -157,14 +134,5 @@ ON permissions TO authenticated
 USING (
   (SELECT has_permission('manage_team'))
   AND
-  (SELECT is_not_disabled())
-  AND
-  is_user_on_same_team(permissions.user_id)
-)
-WITH CHECK (
-  (SELECT has_permission('manage_team'))
-  AND
-  (SELECT is_not_disabled())
-  AND
-  is_user_on_same_team(permissions.user_id)
+  team_num = (SELECT get_team_num())
 );

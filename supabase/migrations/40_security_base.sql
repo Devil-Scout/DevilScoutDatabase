@@ -12,19 +12,6 @@ RETURN EXISTS (
     type = permission_type
 );
 
-CREATE FUNCTION is_not_disabled()
-RETURNS boolean
-STABLE
-SECURITY DEFINER
-LANGUAGE sql
-RETURN NOT EXISTS (
-  SELECT 1
-  FROM
-    disabled_users
-  WHERE
-    user_id = (SELECT auth.uid())
-);
-
 CREATE FUNCTION get_team_num()
 RETURNS smallint
 STABLE
@@ -42,21 +29,18 @@ RETURN (
     )
 );
 
-CREATE FUNCTION is_user_on_same_team(user_id uuid)
+CREATE FUNCTION is_user_on_same_team(id_user uuid)
 RETURNS boolean STRICT
 STABLE
 SECURITY DEFINER
 LANGUAGE sql
 RETURN (
-  (SELECT get_team_num())
-  =
-  (
-    SELECT
-      team_num
-    FROM
-      team_users
-    WHERE
-      team_users.user_id = user_id
+  EXISTS (
+    SELECT 1
+      FROM team_users
+      WHERE
+        team_users.user_id = id_user AND
+        team_users.team_num = (SELECT get_team_num())
   )
 );
 

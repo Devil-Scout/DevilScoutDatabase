@@ -46,11 +46,6 @@ USING (
   bucket_id = 'shared-data'
   AND
   owner = (SELECT auth.uid())
-)
-WITH CHECK (
-  bucket_id = 'shared-data'
-  AND
-  owner = (SELECT auth.uid())
 );
 
 CREATE POLICY "Allow users to DELETE their own files within shared-data"

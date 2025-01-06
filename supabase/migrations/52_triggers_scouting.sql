@@ -1,36 +1,28 @@
 -- submissions
--- CREATE FUNCTION insert_submissions()
--- RETURNS TRIGGER
--- LANGUAGE plpgsql
--- AS $$
--- DECLARE
---   category public.categories%ROWTYPE;
--- BEGIN
---   SELECT * INTO category
---   FROM public.categories
---   WHERE id = NEW.category;
+ALTER TABLE submissions
+  ALTER COLUMN scouting_team
+  SET DEFAULT get_team_num();
 
---   IF (NEW.match_key IS NULL) AND (category.has_match) THEN
---     RAISE EXCEPTION 'match_key required for category';
---   ELSIF (NEW.match_key IS NOT NULL) AND (NOT category.has_match) THEN
---     RAISE EXCEPTION 'match_key not allowed for category';
---   END IF;
+CREATE FUNCTION insert_submissions()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  no_match_categories CONSTANT scouting_category[] := ARRAY['pit'];
+BEGIN
+  IF (NEW.match_key IS NULL) != (NEW.category = ANY(no_match_categories)) THEN
+    RAISE EXCEPTION 'invalid match_key for category %s', NEW.category;
+  END IF;
 
---   NEW.created_at := now();
---   NEW.scouted_by := COALESCE(auth.uid(), NEW.scouted_by);
---   NEW.scouted_for := COALESCE(get_team_num(), NEW.scouted_for);
---   RETURN NEW;
--- END;
--- $$;
+  RETURN NEW;
+END;
+$$;
 
--- REVOKE EXECUTE ON FUNCTION insert_submissions FROM public, anon;
+REVOKE EXECUTE ON FUNCTION insert_submissions FROM public, anon;
 
--- CREATE TRIGGER
---   on_insert
--- BEFORE INSERT ON
---   submissions
--- FOR EACH ROW EXECUTE PROCEDURE
---   insert_submissions();
+CREATE TRIGGER on_insert
+  BEFORE INSERT ON submissions
+  FOR EACH ROW EXECUTE PROCEDURE insert_submissions();
 
 -- submission_data
 CREATE FUNCTION insert_submission_data()

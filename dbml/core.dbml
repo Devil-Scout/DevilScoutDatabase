@@ -13,8 +13,8 @@ Table users {
 Table teams {
   number smallint [not null]
   verified boolean [not null, default: false]
-  created_at timestamptz [not null]
-  created_by uuid
+  created_at timestamptz [not null, default: `now()`]
+  created_by uuid [default: `auth.uid()`]
   name text [not null]
 
   indexes {
@@ -27,15 +27,15 @@ Ref: teams.created_by > users.id [delete: set null]
 
 Table team_users {
   user_id uuid [not null]
-  team_num smallint [not null]
-  added_at timestamptz [not null]
-  added_by uuid
+  team_num smallint [not null] // default: get_team_num()
+  added_at timestamptz [not null, default: `now()`]
+  added_by uuid [default: `auth.uid()`]
 
   indexes {
-    user_id [pk] // patch: include (team_num)
+    user_id [pk]
     (team_num, user_id) [unique]
-    (team_num, added_at) // order by time added
-    added_by // for fk
+    (team_num, added_at)
+    added_by
   }
 
   Note: 'A user\'s association with a team'
@@ -45,34 +45,19 @@ Ref: team_users.team_num > teams.number [delete: cascade]
 Ref: team_users.added_by > users.id [delete: set null]
 
 Table team_requests {
-  user_id uuid [not null]
-  requested_at timestamptz [not null]
+  user_id uuid [not null, default: `auth.uid()`]
+  requested_at timestamptz [not null, default: `now()`]
   team_num smallint [not null]
 
   indexes {
     user_id [pk]
-    (team_num, requested_at) // order by time requested, patch: include (user_id)
+    (team_num, requested_at)
   }
 
   Note: 'A user\'s request to join a team'
 }
 Ref: team_requests.user_id > users.id [delete: cascade]
 Ref: team_requests.team_num > teams.number [delete: cascade]
-
-Table disabled_users {
-  user_id uuid [not null]
-  disabled_by uuid [not null]
-  disabled_at timestamptz [not null]
-
-  indexes {
-    user_id [pk]
-    disabled_by // for fk
-  }
-
-  Note: 'A user whose privileges have been temporarily revoked'
-}
-Ref: disabled_users.user_id > users.id [delete: cascade]
-Ref: disabled_users.disabled_by > users.id [delete: cascade]
 
 Table permission_types {
   id citext [not null]
@@ -88,9 +73,9 @@ Table permission_types {
 
 Table permissions {
   user_id uuid [not null]
-  team_num smallint [not null]
-  granted_at timestamptz [not null]
-  granted_by uuid
+  team_num smallint [not null] // default: get_team_num()
+  granted_at timestamptz [not null, default: `now()`]
+  granted_by uuid [default: `auth.uid()`]
   type citext [not null]
 
   indexes {

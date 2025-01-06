@@ -6,20 +6,10 @@
 -- This allows null ids (where applicable) by simply omitting them
 
 -- teams
-CREATE FUNCTION pre_insert_team()
+CREATE FUNCTION insert_team()
 RETURNS TRIGGER
 LANGUAGE plpgsql
-AS $$
-BEGIN
-  NEW.created_at := now();
-  NEW.created_by := auth.uid();
-  RETURN NEW;
-END;
-$$;
-
-CREATE FUNCTION post_insert_team()
-RETURNS TRIGGER
-LANGUAGE plpgsql
+SECURITY DEFINER
 AS $$
 BEGIN
   IF auth.uid() IS NOT NULL
@@ -70,22 +60,11 @@ BEGIN
 END;
 $$;
 
-REVOKE EXECUTE ON FUNCTION pre_insert_team FROM public, anon;
-REVOKE EXECUTE ON FUNCTION post_insert_team FROM public, anon;
+REVOKE EXECUTE ON FUNCTION insert_team FROM public, anon;
 
-CREATE TRIGGER
-  pre_insert
-BEFORE INSERT ON
-  teams
-FOR EACH ROW EXECUTE PROCEDURE
-  pre_insert_team();
-
-CREATE TRIGGER
-  post_insert
-BEFORE INSERT ON
-  teams
-FOR EACH ROW EXECUTE PROCEDURE
-  post_insert_team();
+CREATE TRIGGER on_insert
+  AFTER INSERT ON teams
+  FOR EACH ROW EXECUTE PROCEDURE insert_team();
 
 -- auth.users
 -- users table is read-only for clients
@@ -137,85 +116,28 @@ FOR EACH ROW EXECUTE PROCEDURE
   update_users();
 
 -- team_users
+ALTER TABLE team_users
+  ALTER COLUMN team_num
+  SET DEfAULT get_team_num();
+
 CREATE FUNCTION insert_team_users()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
 BEGIN
-  NEW.added_by := COALESCE(auth.uid(), NEW.added_by);
-  NEW.added_at := now();
+  DELETE FROM team_requests
+    WHERE user_id = NEW.user_id;
   RETURN NEW;
 END;
 $$;
 
 REVOKE EXECUTE ON FUNCTION insert_team_users FROM public, anon;
 
-CREATE TRIGGER
-  on_insert
-BEFORE INSERT ON
-  team_users
-FOR EACH ROW EXECUTE PROCEDURE
-  insert_team_users();
-
--- team_requests
-CREATE FUNCTION insert_team_requests()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-AS $$
-BEGIN
-  NEW.user_id := COALESCE(auth.uid(), NEW.user_id);
-  NEW.requested_at := now();
-  RETURN NEW;
-END;
-$$;
-
-REVOKE EXECUTE ON FUNCTION insert_team_requests FROM public, anon;
-
-CREATE TRIGGER
-  on_insert
-BEFORE INSERT ON
-  team_requests
-FOR EACH ROW EXECUTE PROCEDURE
-  insert_team_requests();
-
--- disabled_users
-CREATE FUNCTION insert_disabled_users()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-AS $$
-BEGIN
-  NEW.disabled_by := COALESCE(auth.uid(), NEW.disabled_by);
-  NEW.disabled_at := now();
-  RETURN NEW;
-END;
-$$;
-
-REVOKE EXECUTE ON FUNCTION insert_disabled_users FROM public, anon;
-
-CREATE TRIGGER
-  on_insert
-BEFORE INSERT ON
-  disabled_users
-FOR EACH ROW EXECUTE PROCEDURE
-  insert_disabled_users();
+CREATE TRIGGER on_insert
+  AFTER INSERT ON team_users
+  FOR EACH ROW EXECUTE PROCEDURE insert_team_users();
 
 -- permissions
-CREATE FUNCTION insert_permissions()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-AS $$
-BEGIN
-  NEW.granted_by := COALESCE(auth.uid(), NEW.granted_by);
-  NEW.granted_at := now();
-  RETURN NEW;
-END;
-$$;
-
-REVOKE EXECUTE ON FUNCTION insert_permissions FROM public, anon;
-
-CREATE TRIGGER
-  on_insert
-BEFORE INSERT ON
-  permissions
-FOR EACH ROW EXECUTE PROCEDURE
-  insert_permissions();
+ALTER TABLE permissions
+  ALTER COLUMN team_num
+  SET DEFAULT get_team_num();

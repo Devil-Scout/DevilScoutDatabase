@@ -33,8 +33,8 @@ CREATE TABLE "users" (
 CREATE TABLE "teams" (
   "number" smallint NOT NULL,
   "verified" boolean NOT NULL DEFAULT false,
-  "created_at" timestamptz NOT NULL,
-  "created_by" uuid,
+  "created_at" timestamptz NOT NULL DEFAULT (now()),
+  "created_by" uuid DEFAULT (auth.uid()),
   "name" text NOT NULL,
   PRIMARY KEY ("number")
 );
@@ -42,22 +42,15 @@ CREATE TABLE "teams" (
 CREATE TABLE "team_users" (
   "user_id" uuid NOT NULL,
   "team_num" smallint NOT NULL,
-  "added_at" timestamptz NOT NULL,
-  "added_by" uuid,
+  "added_at" timestamptz NOT NULL DEFAULT (now()),
+  "added_by" uuid DEFAULT (auth.uid()),
   PRIMARY KEY ("user_id")
 );
 
 CREATE TABLE "team_requests" (
-  "user_id" uuid NOT NULL,
-  "requested_at" timestamptz NOT NULL,
+  "user_id" uuid NOT NULL DEFAULT (auth.uid()),
+  "requested_at" timestamptz NOT NULL DEFAULT (now()),
   "team_num" smallint NOT NULL,
-  PRIMARY KEY ("user_id")
-);
-
-CREATE TABLE "disabled_users" (
-  "user_id" uuid NOT NULL,
-  "disabled_by" uuid NOT NULL,
-  "disabled_at" timestamptz NOT NULL,
   PRIMARY KEY ("user_id")
 );
 
@@ -71,8 +64,8 @@ CREATE TABLE "permission_types" (
 CREATE TABLE "permissions" (
   "user_id" uuid NOT NULL,
   "team_num" smallint NOT NULL,
-  "granted_at" timestamptz NOT NULL,
-  "granted_by" uuid,
+  "granted_at" timestamptz NOT NULL DEFAULT (now()),
+  "granted_by" uuid DEFAULT (auth.uid()),
   "type" citext NOT NULL,
   PRIMARY KEY ("user_id", "type")
 );
@@ -200,13 +193,13 @@ CREATE TABLE "questions" (
 );
 
 CREATE TABLE "submissions" (
-  "id" uuid NOT NULL,
+  "id" uuid NOT NULL DEFAULT (gen_random_uuid()),
   "category" scouting_category NOT NULL,
   "season" smallint NOT NULL,
-  "team_num" smallint NOT NULL,
-  "created_at" timestamptz NOT NULL,
-  "scouted_by" uuid,
-  "scouted_for" smallint,
+  "scouted_team" smallint NOT NULL,
+  "created_at" timestamptz NOT NULL DEFAULT (now()),
+  "scouting_user" uuid DEFAULT (auth.uid()),
+  "scouting_team" smallint,
   "event_key" citext NOT NULL,
   "match_key" citext,
   PRIMARY KEY ("id")
@@ -234,8 +227,6 @@ CREATE INDEX ON "team_users" ("team_num", "added_at");
 CREATE INDEX ON "team_users" ("added_by");
 
 CREATE INDEX ON "team_requests" ("team_num", "requested_at");
-
-CREATE INDEX ON "disabled_users" ("disabled_by");
 
 CREATE INDEX ON "permissions" ("team_num", "type");
 
@@ -271,15 +262,15 @@ CREATE UNIQUE INDEX ON "questions" ("parent_id", "index");
 
 CREATE INDEX ON "submissions" ("season", "category");
 
-CREATE INDEX ON "submissions" ("event_key");
+CREATE INDEX ON "submissions" ("event_key", "scouted_team");
 
-CREATE INDEX ON "submissions" ("match_key", "team_num");
+CREATE INDEX ON "submissions" ("match_key", "scouted_team");
 
-CREATE INDEX ON "submissions" ("team_num");
+CREATE INDEX ON "submissions" ("scouted_team");
 
-CREATE INDEX ON "submissions" ("scouted_by");
+CREATE INDEX ON "submissions" ("scouting_user");
 
-CREATE INDEX ON "submissions" ("scouted_for");
+CREATE INDEX ON "submissions" ("scouting_team");
 
 COMMENT ON TABLE "users" IS 'A user of the platform';
 
@@ -288,8 +279,6 @@ COMMENT ON TABLE "teams" IS 'A team utilizing the platform';
 COMMENT ON TABLE "team_users" IS 'A user''s association with a team';
 
 COMMENT ON TABLE "team_requests" IS 'A user''s request to join a team';
-
-COMMENT ON TABLE "disabled_users" IS 'A user whose privileges have been temporarily revoked';
 
 COMMENT ON TABLE "permission_types" IS 'Types of permissions users may hold';
 
@@ -333,10 +322,6 @@ ALTER TABLE "team_requests" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id"
 
 ALTER TABLE "team_requests" ADD FOREIGN KEY ("team_num") REFERENCES "teams" ("number") ON DELETE CASCADE;
 
-ALTER TABLE "disabled_users" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE;
-
-ALTER TABLE "disabled_users" ADD FOREIGN KEY ("disabled_by") REFERENCES "users" ("id") ON DELETE CASCADE;
-
 ALTER TABLE "permissions" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE;
 
 ALTER TABLE "permissions" ADD FOREIGN KEY ("type") REFERENCES "permission_types" ("id") ON DELETE CASCADE;
@@ -379,11 +364,11 @@ ALTER TABLE "submissions" ADD FOREIGN KEY ("match_key") REFERENCES "frc_matches"
 
 ALTER TABLE "submissions" ADD FOREIGN KEY ("season") REFERENCES "frc_seasons" ("year") ON DELETE RESTRICT;
 
-ALTER TABLE "submissions" ADD FOREIGN KEY ("team_num") REFERENCES "frc_teams" ("number") ON DELETE RESTRICT;
+ALTER TABLE "submissions" ADD FOREIGN KEY ("scouted_team") REFERENCES "frc_teams" ("number") ON DELETE RESTRICT;
 
-ALTER TABLE "submissions" ADD FOREIGN KEY ("scouted_by") REFERENCES "users" ("id") ON DELETE SET NULL;
+ALTER TABLE "submissions" ADD FOREIGN KEY ("scouting_user") REFERENCES "users" ("id") ON DELETE SET NULL;
 
-ALTER TABLE "submissions" ADD FOREIGN KEY ("scouted_for") REFERENCES "teams" ("number") ON DELETE SET NULL;
+ALTER TABLE "submissions" ADD FOREIGN KEY ("scouting_team") REFERENCES "teams" ("number") ON DELETE SET NULL;
 
 ALTER TABLE "submission_data" ADD FOREIGN KEY ("submission_id") REFERENCES "submissions" ("id") ON DELETE CASCADE;
 

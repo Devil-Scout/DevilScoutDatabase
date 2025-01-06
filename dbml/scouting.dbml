@@ -32,24 +32,24 @@ Ref: questions.parent_id > questions.id [delete: cascade]
 Ref: questions.season > frc_seasons.year [delete: restrict]
 
 Table submissions {
-  id uuid [not null]
+  id uuid [not null, default: `gen_random_uuid()`]
   category scouting_category [not null]
   season smallint [not null]
-  team_num smallint [not null]
-  created_at timestamptz [not null]
-  scouted_by uuid
-  scouted_for smallint
+  scouted_team smallint [not null]
+  created_at timestamptz [not null, default: `now()`]
+  scouting_user uuid [default: `auth.uid()`]
+  scouting_team smallint // default: get_team_num()
   event_key citext [not null]
   match_key citext
 
   indexes {
     id [pk]
     (season, category)
-    event_key
-    (match_key, team_num)
-    team_num
-    scouted_by
-    scouted_for
+    (event_key, scouted_team)
+    (match_key, scouted_team)
+    scouted_team
+    scouting_user
+    scouting_team
   }
 
   Note: 'A scouting data submission'
@@ -57,9 +57,9 @@ Table submissions {
 Ref: submissions.event_key > frc_events.key [delete: restrict]
 Ref: submissions.match_key > frc_matches.key [delete: restrict]
 Ref: submissions.season > frc_seasons.year [delete: restrict]
-Ref: submissions.team_num > frc_teams.number [delete: restrict]
-Ref: submissions.scouted_by > users.id [delete: set null]
-Ref: submissions.scouted_for > teams.number [delete: set null]
+Ref: submissions.scouted_team > frc_teams.number [delete: restrict]
+Ref: submissions.scouting_user > users.id [delete: set null]
+Ref: submissions.scouting_team > teams.number [delete: set null]
 
 Table submission_data {
   submission_id uuid [not null]
