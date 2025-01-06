@@ -19,6 +19,14 @@ USING (
   number = (SELECT get_team_num())
 );
 
+CREATE POLICY "'manage_team' can DELETE their team"
+  ON teams FOR DELETE TO  authenticated
+  USING (
+    (SELECT has_permission('manage_team'))
+    AND
+    number = (SELECT get_team_num())
+  );
+
 -- users -------------------------------
 GRANT SELECT ON TABLE users TO authenticated;
 
