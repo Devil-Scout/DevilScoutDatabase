@@ -123,19 +123,52 @@ ALTER TABLE team_users
 CREATE FUNCTION insert_team_users()
 RETURNS TRIGGER
 LANGUAGE plpgsql
+SECURITY DEFINER
 AS $$
 BEGIN
   DELETE FROM team_requests
     WHERE user_id = NEW.user_id;
+
+  UPDATE auth.users
+    SET raw_user_meta_data = jsonb_set(
+      raw_user_meta_data,
+      '{team_num}',
+      NEW.team_num
+    )
+    WHERE id = NEW.user_id;
+
+  RETURN NEW;
+END;
+$$;
+
+CREATE FUNCTION delete_team_users()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  UPDATE auth.users
+    SET raw_user_meta_data = jsonb_set(
+      raw_user_meta_data,
+      '{team_num}',
+      NULL
+    )
+    WHERE id = OLD.user_id;
+
   RETURN NEW;
 END;
 $$;
 
 REVOKE EXECUTE ON FUNCTION insert_team_users FROM public, anon;
+REVOKE EXECUTE ON FUNCTION delete_team_users FROM public, anon;
 
 CREATE TRIGGER on_insert
   AFTER INSERT ON team_users
   FOR EACH ROW EXECUTE PROCEDURE insert_team_users();
+
+CREATE TRIGGER on_delete
+  AFTER DELETE ON team_users
+  FOR EACH ROW EXECUTE PROCEDURE delete_team_users();
 
 -- permissions
 ALTER TABLE permissions
