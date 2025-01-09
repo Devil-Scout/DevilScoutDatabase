@@ -12,6 +12,14 @@ CREATE TYPE "permission_type" AS ENUM (
   'manage_team'
 );
 
+CREATE TYPE "frc_match_level" AS ENUM (
+  'qm',
+  'ef',
+  'qf',
+  'sf',
+  'f'
+);
+
 CREATE TYPE "frc_alliance" AS ENUM (
   'red',
   'blue'
@@ -136,16 +144,10 @@ CREATE TABLE "frc_event_teams" (
   PRIMARY KEY ("event_key", "team_num")
 );
 
-CREATE TABLE "frc_match_levels" (
-  "id" citext NOT NULL,
-  "name" citext NOT NULL,
-  PRIMARY KEY ("id")
-);
-
 CREATE TABLE "frc_matches" (
   "number" smallint NOT NULL,
   "set" smallint NOT NULL,
-  "level" citext NOT NULL,
+  "level" frc_match_level NOT NULL,
   "event_key" citext NOT NULL,
   "key" citext NOT NULL,
   "scheduled_time" timestamptz,
@@ -246,8 +248,6 @@ CREATE INDEX ON "frc_events" ("district_key");
 
 CREATE UNIQUE INDEX ON "frc_event_teams" ("team_num", "event_key");
 
-CREATE UNIQUE INDEX ON "frc_match_levels" ("name");
-
 CREATE UNIQUE INDEX ON "frc_matches" ("event_key", "level", "set", "number");
 
 CREATE INDEX ON "frc_match_teams" ("team_num", "match_key");
@@ -294,8 +294,6 @@ COMMENT ON TABLE "frc_teams" IS 'A team competing in a particular season';
 
 COMMENT ON TABLE "frc_event_teams" IS 'A team competing in an event';
 
-COMMENT ON TABLE "frc_match_levels" IS 'A level of competition for matches';
-
 COMMENT ON TABLE "frc_matches" IS 'A match at an event';
 
 COMMENT ON TABLE "frc_match_teams" IS 'A team competing in a match';
@@ -341,8 +339,6 @@ ALTER TABLE "frc_event_teams" ADD FOREIGN KEY ("event_key") REFERENCES "frc_even
 ALTER TABLE "frc_event_teams" ADD FOREIGN KEY ("team_num") REFERENCES "frc_teams" ("number") ON DELETE CASCADE;
 
 ALTER TABLE "frc_matches" ADD FOREIGN KEY ("event_key") REFERENCES "frc_events" ("key") ON DELETE CASCADE;
-
-ALTER TABLE "frc_matches" ADD FOREIGN KEY ("level") REFERENCES "frc_match_levels" ("id") ON DELETE RESTRICT;
 
 ALTER TABLE "frc_match_teams" ADD FOREIGN KEY ("match_key") REFERENCES "frc_matches" ("key") ON DELETE CASCADE;
 

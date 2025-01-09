@@ -126,23 +126,18 @@ Table frc_event_teams {
 Ref: frc_event_teams.event_key > frc_events.key [delete: cascade]
 Ref: frc_event_teams.team_num > frc_teams.number [delete: cascade]
 
-// Manually populated
-Table frc_match_levels {
-  id citext [not null]
-  name citext [not null]
-
-  indexes {
-    id [pk]
-    name [unique]
-  }
-
-  Note: 'A level of competition for matches'
+Enum frc_match_level {
+  qm
+  ef
+  qf
+  sf
+  f
 }
 
 Table frc_matches {
   number smallint [not null]
   set smallint [not null]
-  level citext [not null]
+  level frc_match_level [not null]
   event_key citext [not null]
   key citext [not null]
 
@@ -158,7 +153,6 @@ Table frc_matches {
   Note: 'A match at an event'
 }
 Ref: frc_matches.event_key > frc_events.key [delete: cascade]
-Ref: frc_matches.level > frc_match_levels.id [delete: restrict] // no index, won't change
 
 Enum frc_alliance {
   red

@@ -146,7 +146,7 @@ BEGIN
     SELECT
       (r.j->>'key') AS key,
       (r.j->>'event_key') AS event_key,
-      (r.j->>'comp_level') AS level,
+      (r.j->>'comp_level')::frc_match_level AS level,
       (r.j->>'set_number')::smallint AS set,
       (r.j->>'match_number')::smallint AS number,
       to_timestamp((r.j->>'time')::float8) AS scheduled_time,

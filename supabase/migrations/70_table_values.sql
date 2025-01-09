@@ -12,14 +12,6 @@ VALUES
   (99, FALSE, FALSE, FALSE, TRUE, 'Offseason Event', 'Offseason'),
   (100, FALSE, FALSE, FALSE, TRUE, 'Preseason Event', 'Preseason');
 
-INSERT INTO frc_match_levels
-  (id, name)
-VALUES
-  ('qm', 'Qualifier'),
-  ('ef', 'Elimination Final'),
-  ('qf', 'Quarterfinal'),
-  ('sf', 'Semifinal'),
-  ('f', 'Final');
 
 INSERT INTO frc_seasons
   (year, name)
