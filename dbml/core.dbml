@@ -1,4 +1,4 @@
-Table users {
+Table user_profiles {
   id uuid [not null]
   created_at timestamptz [not null]
   name text
@@ -23,7 +23,7 @@ Table teams {
 
   Note: 'A team utilizing the platform'
 }
-Ref: teams.created_by > users.id [delete: set null]
+Ref: teams.created_by > user_profiles.id [delete: set null]
 Ref: teams.number > frc_teams.number [delete: restrict]
 
 Table team_users {
@@ -41,9 +41,9 @@ Table team_users {
 
   Note: 'A user\'s association with a team'
 }
-Ref: team_users.user_id > users.id [delete: cascade]
+Ref: team_users.user_id > user_profiles.id [delete: cascade]
 Ref: team_users.team_num > teams.number [delete: cascade]
-Ref: team_users.added_by > users.id [delete: set null]
+Ref: team_users.added_by > user_profiles.id [delete: set null]
 
 Table team_requests {
   user_id uuid [not null, default: `auth.uid()`]
@@ -57,7 +57,7 @@ Table team_requests {
 
   Note: 'A user\'s request to join a team'
 }
-Ref: team_requests.user_id > users.id [delete: cascade]
+Ref: team_requests.user_id > user_profiles.id [delete: cascade]
 Ref: team_requests.team_num > teams.number [delete: cascade]
 
 Enum permission_type {
@@ -83,6 +83,5 @@ Table permissions {
 
   Note: 'A user\'s permission'
 }
-Ref: permissions.user_id > users.id [delete: cascade]
 Ref: permissions.(team_num, user_id) > team_users.(team_num, user_id) [delete: cascade]
 Ref: permissions.(team_num, granted_by) > team_users.(team_num, user_id) [delete: cascade]

@@ -1,2 +1,2 @@
-ALTER TABLE users
+ALTER TABLE user_profiles
 ADD FOREIGN KEY (id) REFERENCES auth.users (id) ON DELETE CASCADE;
