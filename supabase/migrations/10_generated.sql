@@ -312,6 +312,8 @@ COMMENT ON TABLE "sync"."etags" IS 'A TBA ETag to reduce network traffic';
 
 ALTER TABLE "teams" ADD FOREIGN KEY ("created_by") REFERENCES "users" ("id") ON DELETE SET NULL;
 
+ALTER TABLE "teams" ADD FOREIGN KEY ("number") REFERENCES "frc_teams" ("number") ON DELETE RESTRICT;
+
 ALTER TABLE "team_users" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE;
 
 ALTER TABLE "team_users" ADD FOREIGN KEY ("team_num") REFERENCES "teams" ("number") ON DELETE CASCADE;

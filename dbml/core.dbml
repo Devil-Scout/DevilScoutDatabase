@@ -24,6 +24,7 @@ Table teams {
   Note: 'A team utilizing the platform'
 }
 Ref: teams.created_by > users.id [delete: set null]
+Ref: teams.number > frc_teams.number [delete: restrict]
 
 Table team_users {
   user_id uuid [not null]
