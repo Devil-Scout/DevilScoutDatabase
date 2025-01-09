@@ -15,7 +15,7 @@ USING (true);
 CREATE POLICY "'scout.{category}' can INSERT {category} entries"
 ON submissions FOR INSERT TO authenticated
 WITH CHECK (
-  has_permission(('scout.' || category)::citext)
+  has_permission(('scout.' || category)::permission_type)
 );
 
 -- submission_data
@@ -30,7 +30,7 @@ ON submission_data FOR INSERT TO authenticated
 WITH CHECK (
   (
     SELECT
-      (scouting_user = (SELECT auth.uid())) AND has_permission(('scout.' || category)::citext)
+      (scouting_user = (SELECT auth.uid())) AND has_permission(('scout.' || category)::permission_type)
       FROM submissions
       WHERE submissions.id = submission_id
   )

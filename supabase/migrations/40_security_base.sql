@@ -1,4 +1,4 @@
-CREATE FUNCTION has_permission(permission_type citext)
+CREATE FUNCTION has_permission(p_type permission_type)
 RETURNS boolean STRICT
 STABLE
 SECURITY DEFINER
@@ -9,7 +9,7 @@ RETURN EXISTS (
     permissions
   WHERE
     user_id = (SELECT auth.uid()) AND
-    type = permission_type
+    type = p_type
 );
 
 CREATE FUNCTION get_team_num()
