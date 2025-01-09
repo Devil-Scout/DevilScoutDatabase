@@ -1,28 +1,3 @@
-INSERT INTO
-  permission_types (id, name, description)
-VALUES
-  (
-    'manage_team',
-    'Manage Team',
-   E'- Approve requests to join your team\n'
-    '- Change member permissions'
-  ),
-  (
-    'scout.match',
-    'Match Scouting',
-   E'- Submit match scouting data'
-  ),
-  (
-    'scout.pit',
-    'Pit Scouting',
-   E'- Submit pit scouting data'
-  ),
-  (
-    'scout.drive_team',
-    'Drive Team Scouting',
-   E'- Submit drive team scouting data'
-  );
-
 INSERT INTO frc_event_types
   (id, is_district, is_championship, is_division, is_offseason, name, name_short)
 VALUES

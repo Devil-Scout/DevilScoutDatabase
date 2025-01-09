@@ -121,13 +121,6 @@ USING (
   team_num = (SELECT get_team_num())
 );
 
--- permission_types --------------------
-GRANT SELECT ON TABLE permission_types TO authenticated;
-
-CREATE POLICY "Anyone can SELECT any permission type"
-ON permission_types FOR SELECT TO authenticated
-USING (true);
-
 -- permissions -------------------------
 GRANT SELECT, DELETE, INSERT(user_id, type) ON TABLE permissions TO authenticated;
 

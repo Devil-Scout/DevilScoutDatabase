@@ -60,16 +60,11 @@ Table team_requests {
 Ref: team_requests.user_id > users.id [delete: cascade]
 Ref: team_requests.team_num > teams.number [delete: cascade]
 
-Table permission_types {
-  id citext [not null]
-  name text [not null]
-  description text [not null]
-
-  indexes {
-    id [pk]
-  }
-
-  Note: 'Types of permissions users may hold'
+Enum permission_type {
+  "scout.match"
+  "scout.pit"
+  "scout.drive_team"
+  "manage_team"
 }
 
 Table permissions {
@@ -77,7 +72,7 @@ Table permissions {
   team_num smallint [not null] // default: get_team_num()
   granted_at timestamptz [not null, default: `now()`]
   granted_by uuid [default: `auth.uid()`]
-  type citext [not null]
+  type permission_type [not null]
 
   indexes {
     (user_id, type) [pk]
@@ -89,6 +84,5 @@ Table permissions {
   Note: 'A user\'s permission'
 }
 Ref: permissions.user_id > users.id [delete: cascade]
-Ref: permissions.type > permission_types.id [delete: cascade]
 Ref: permissions.(team_num, user_id) > team_users.(team_num, user_id) [delete: cascade]
 Ref: permissions.(team_num, granted_by) > team_users.(team_num, user_id) [delete: cascade]

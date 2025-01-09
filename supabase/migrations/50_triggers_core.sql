@@ -26,8 +26,8 @@ BEGIN
         SELECT
           (SELECT auth.uid()),
           NEW.number,
-          id
-        FROM permission_types
+          type
+        FROM unnest(enum_range(NULL::permission_type)) AS type
       );
   END IF;
 

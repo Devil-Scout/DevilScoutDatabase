@@ -5,6 +5,13 @@
 
 CREATE SCHEMA "sync";
 
+CREATE TYPE "permission_type" AS ENUM (
+  'scout.match',
+  'scout.pit',
+  'scout.drive_team',
+  'manage_team'
+);
+
 CREATE TYPE "frc_alliance" AS ENUM (
   'red',
   'blue'
@@ -54,19 +61,12 @@ CREATE TABLE "team_requests" (
   PRIMARY KEY ("user_id")
 );
 
-CREATE TABLE "permission_types" (
-  "id" citext NOT NULL,
-  "name" text NOT NULL,
-  "description" text NOT NULL,
-  PRIMARY KEY ("id")
-);
-
 CREATE TABLE "permissions" (
   "user_id" uuid NOT NULL,
   "team_num" smallint NOT NULL,
   "granted_at" timestamptz NOT NULL DEFAULT (now()),
   "granted_by" uuid DEFAULT (auth.uid()),
-  "type" citext NOT NULL,
+  "type" permission_type NOT NULL,
   PRIMARY KEY ("user_id", "type")
 );
 
@@ -280,8 +280,6 @@ COMMENT ON TABLE "team_users" IS 'A user''s association with a team';
 
 COMMENT ON TABLE "team_requests" IS 'A user''s request to join a team';
 
-COMMENT ON TABLE "permission_types" IS 'Types of permissions users may hold';
-
 COMMENT ON TABLE "permissions" IS 'A user''s permission';
 
 COMMENT ON TABLE "frc_seasons" IS 'A competition season with a unique game';
@@ -325,8 +323,6 @@ ALTER TABLE "team_requests" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id"
 ALTER TABLE "team_requests" ADD FOREIGN KEY ("team_num") REFERENCES "teams" ("number") ON DELETE CASCADE;
 
 ALTER TABLE "permissions" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE;
-
-ALTER TABLE "permissions" ADD FOREIGN KEY ("type") REFERENCES "permission_types" ("id") ON DELETE CASCADE;
 
 ALTER TABLE "permissions" ADD FOREIGN KEY ("team_num", "user_id") REFERENCES "team_users" ("team_num", "user_id") ON DELETE CASCADE;
 
