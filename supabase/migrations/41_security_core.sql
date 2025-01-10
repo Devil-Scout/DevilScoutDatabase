@@ -93,7 +93,7 @@ WITH CHECK (
 );
 
 -- team_requests -----------------------
-GRANT SELECT, DELETE, INSERT(team_num) ON TABLE team_requests TO public, anon, authenticated;
+GRANT SELECT, DELETE, INSERT(team_num) ON TABLE team_requests TO authenticated;
 
 CREATE POLICY "Anyone can SELECT, INSERT, or DELETE their request"
 ON team_requests TO authenticated
