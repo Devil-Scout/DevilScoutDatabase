@@ -19,6 +19,7 @@ Table teams {
 
   indexes {
     number [pk]
+    // name (gin, pg_trgm)
   }
 
   Note: 'A team utilizing the platform'

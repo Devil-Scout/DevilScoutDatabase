@@ -106,6 +106,8 @@ Table frc_teams {
 
   indexes {
     number [pk]
+    // name (gin, pg_trgm)
+    // (number::text) (gin, pg_trgm)
   }
 
   Note: 'A team competing in a particular season'
