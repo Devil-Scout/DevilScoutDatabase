@@ -1,5 +1,5 @@
-ALTER TABLE user_profiles
-ADD FOREIGN KEY (id) REFERENCES auth.users (id) ON DELETE CASCADE;
+ALTER TABLE profiles
+ADD FOREIGN KEY (user_id) REFERENCES auth.users (id) ON DELETE CASCADE;
 
 CREATE FUNCTION frc_teams_search(query text)
 RETURNS SETOF smallint

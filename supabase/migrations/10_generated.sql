@@ -38,11 +38,11 @@ CREATE TYPE "data_type" AS ENUM (
   'string[]'
 );
 
-CREATE TABLE "user_profiles" (
-  "id" uuid NOT NULL,
+CREATE TABLE "profiles" (
+  "user_id" uuid NOT NULL,
   "created_at" timestamptz NOT NULL,
   "name" text,
-  PRIMARY KEY ("id")
+  PRIMARY KEY ("user_id")
 );
 
 CREATE TABLE "teams" (
@@ -272,7 +272,7 @@ CREATE INDEX ON "submissions" ("scouting_user");
 
 CREATE INDEX ON "submissions" ("scouting_team");
 
-COMMENT ON TABLE "user_profiles" IS 'A user of the platform';
+COMMENT ON TABLE "profiles" IS 'A user of the platform';
 
 COMMENT ON TABLE "teams" IS 'A team utilizing the platform';
 
@@ -306,17 +306,17 @@ COMMENT ON TABLE "submission_data" IS 'A submission''s scouting data';
 
 COMMENT ON TABLE "sync"."etags" IS 'A TBA ETag to reduce network traffic';
 
-ALTER TABLE "teams" ADD FOREIGN KEY ("created_by") REFERENCES "user_profiles" ("id") ON DELETE SET NULL;
+ALTER TABLE "teams" ADD FOREIGN KEY ("created_by") REFERENCES "profiles" ("user_id") ON DELETE SET NULL;
 
 ALTER TABLE "teams" ADD FOREIGN KEY ("number") REFERENCES "frc_teams" ("number") ON DELETE RESTRICT;
 
-ALTER TABLE "team_users" ADD FOREIGN KEY ("user_id") REFERENCES "user_profiles" ("id") ON DELETE CASCADE;
+ALTER TABLE "team_users" ADD FOREIGN KEY ("user_id") REFERENCES "profiles" ("user_id") ON DELETE CASCADE;
 
 ALTER TABLE "team_users" ADD FOREIGN KEY ("team_num") REFERENCES "teams" ("number") ON DELETE CASCADE;
 
-ALTER TABLE "team_users" ADD FOREIGN KEY ("added_by") REFERENCES "user_profiles" ("id") ON DELETE SET NULL;
+ALTER TABLE "team_users" ADD FOREIGN KEY ("added_by") REFERENCES "profiles" ("user_id") ON DELETE SET NULL;
 
-ALTER TABLE "team_requests" ADD FOREIGN KEY ("user_id") REFERENCES "user_profiles" ("id") ON DELETE CASCADE;
+ALTER TABLE "team_requests" ADD FOREIGN KEY ("user_id") REFERENCES "profiles" ("user_id") ON DELETE CASCADE;
 
 ALTER TABLE "team_requests" ADD FOREIGN KEY ("team_num") REFERENCES "teams" ("number") ON DELETE CASCADE;
 
@@ -358,7 +358,7 @@ ALTER TABLE "submissions" ADD FOREIGN KEY ("season") REFERENCES "frc_seasons" ("
 
 ALTER TABLE "submissions" ADD FOREIGN KEY ("scouted_team") REFERENCES "frc_teams" ("number") ON DELETE RESTRICT;
 
-ALTER TABLE "submissions" ADD FOREIGN KEY ("scouting_user") REFERENCES "user_profiles" ("id") ON DELETE SET NULL;
+ALTER TABLE "submissions" ADD FOREIGN KEY ("scouting_user") REFERENCES "profiles" ("user_id") ON DELETE SET NULL;
 
 ALTER TABLE "submissions" ADD FOREIGN KEY ("scouting_team") REFERENCES "teams" ("number") ON DELETE SET NULL;
 

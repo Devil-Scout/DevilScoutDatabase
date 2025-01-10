@@ -58,7 +58,7 @@ Ref: submissions.event_key > frc_events.key [delete: restrict]
 Ref: submissions.match_key > frc_matches.key [delete: restrict]
 Ref: submissions.season > frc_seasons.year [delete: restrict]
 Ref: submissions.scouted_team > frc_teams.number [delete: restrict]
-Ref: submissions.scouting_user > user_profiles.id [delete: set null]
+Ref: submissions.scouting_user > profiles.user_id [delete: set null]
 Ref: submissions.scouting_team > teams.number [delete: set null]
 
 Table submission_data {

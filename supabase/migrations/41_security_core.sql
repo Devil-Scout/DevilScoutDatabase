@@ -27,34 +27,34 @@ CREATE POLICY "'manage_team' can DELETE their team"
     number = (SELECT get_team_num())
   );
 
--- user_profiles -------------------------------
-GRANT SELECT ON TABLE user_profiles TO authenticated;
+-- profiles -------------------------------
+GRANT SELECT ON TABLE profiles TO authenticated;
 
 CREATE POLICY "Anyone can SELECT themself or their team's members"
-ON user_profiles FOR SELECT TO authenticated
+ON profiles FOR SELECT TO authenticated
 USING (
-  user_profiles.id = (SELECT auth.uid())
+  profiles.user_id = (SELECT auth.uid())
   OR
-  is_user_on_same_team(user_profiles.id)
+  is_user_on_same_team(profiles.user_id)
 );
 
 CREATE POLICY "'manage_team' can SELECT users requesting their team"
-ON user_profiles FOR SELECT TO authenticated
+ON profiles FOR SELECT TO authenticated
 USING (
   (SELECT has_permission('manage_team'))
   AND
   EXISTS (
     SELECT 1 FROM team_requests
       WHERE
-        team_requests.user_id = user_profiles.id AND
+        team_requests.user_id = profiles.user_id AND
         team_requests.team_num = (SELECT get_team_num())
   )
 );
 
-GRANT ALL ON TABLE user_profiles TO supabase_auth_admin;
+GRANT ALL ON TABLE profiles TO supabase_auth_admin;
 
 CREATE POLICY "Supabase Auth can read/write users"
-ON user_profiles FOR ALL TO supabase_auth_admin
+ON profiles FOR ALL TO supabase_auth_admin
 USING (true);
 
 -- team_users --------------------------

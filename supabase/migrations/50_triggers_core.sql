@@ -67,14 +67,14 @@ CREATE TRIGGER on_insert
   FOR EACH ROW EXECUTE PROCEDURE insert_team();
 
 -- auth.users
--- user_profiles table is read-only for clients
+-- profiles table is read-only for clients
 CREATE FUNCTION insert_users()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
 BEGIN
-  INSERT INTO public.user_profiles
-    (id, name, created_at) VALUES
+  INSERT INTO public.profiles
+    (user_id, name, created_at) VALUES
     (
       NEW.id,
       NEW.raw_user_meta_data->>'full_name',
@@ -89,11 +89,11 @@ RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
 BEGIN
-  UPDATE public.user_profiles
+  UPDATE public.profiles
     SET
       name = NEW.raw_user_meta_data->>'full_name'
     WHERE
-      id = NEW.id;
+      user_id = NEW.id;
   RETURN NEW;
 END;
 $$;
