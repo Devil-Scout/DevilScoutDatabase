@@ -18,7 +18,7 @@ RETURNS SETOF citext
 LANGUAGE sql
 STABLE
 AS $$
-  SELECT frc_events.key
+  SELECT e.key
     FROM frc_events e
     WHERE e.season = year
     ORDER BY greatest(

@@ -19,6 +19,7 @@ Table teams {
 
   indexes {
     number [pk]
+    // number::text (gin, pg_trgm)
     // name (gin, pg_trgm)
   }
 

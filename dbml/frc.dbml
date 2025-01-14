@@ -85,6 +85,8 @@ Table frc_events {
     (type, season)
     (start_date, end_date)
     district_key // for fk
+    // key (gin, pg_trgm)
+    // name (gin, pg_trgm)
   }
 
   Note: 'An event or competition'
