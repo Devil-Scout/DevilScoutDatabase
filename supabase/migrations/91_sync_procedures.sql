@@ -194,8 +194,7 @@ BEGIN
       (r.j->'alliances'->'red'->>'score')::smallint AS red_score,
       (r.j->'alliances'->'blue'->>'score')::smallint AS blue_score,
       nullif(r.j->>'winning_alliance', '')::frc_alliance AS winning_alliance,
-      ARRAY(SELECT jsonb_array_elements(r.j->'videos')) AS videos,
-      (r.j->'score_breakdown') AS score_breakdown
+      ARRAY(SELECT jsonb_array_elements(r.j->'videos')) AS videos
     FROM results r
   )
   MERGE INTO frc_match_results f
@@ -207,23 +206,43 @@ BEGIN
       red_score,
       blue_score,
       winning_alliance,
-      videos,
-      score_breakdown
+      videos
     )
     VALUES (
       r.match_key,
       r.red_score,
       r.blue_score,
       r.winning_alliance,
-      r.videos,
-      r.score_breakdown
+      r.videos
     )
   WHEN MATCHED THEN
     UPDATE SET
       red_score = r.red_score,
       blue_score = r.blue_score,
       winning_alliance = r.winning_alliance,
-      videos = r.videos,
+      videos = r.videos;
+
+  WITH match_breakdowns AS (
+    SELECT
+      (r.j->>'key') AS match_key,
+      (r.j->'score_breakdown') AS score_breakdown
+    FROM results r
+    WHERE score_breakdown IS NOT NULL
+  )
+  MERGE INTO frc_match_breakdowns f
+  USING match_breakdowns r ON
+    f.match_key = r.match_key
+  WHEN NOT MATCHED THEN
+    INSERT (
+      match_key,
+      score_breakdown
+    )
+    VALUES (
+      r.match_key,
+      r.score_breakdown
+    )
+  WHEN MATCHED THEN
+    UPDATE SET
       score_breakdown = r.score_breakdown;
 
   DROP TABLE IF EXISTS match_teams;

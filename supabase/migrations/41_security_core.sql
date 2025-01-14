@@ -11,18 +11,18 @@ WITH CHECK (
   (SELECT get_team_num() IS NULL)
 );
 
-CREATE POLICY "'manage_team' can UPDATE their team"
+CREATE POLICY "'team.admin' can UPDATE their team name"
 ON teams FOR UPDATE TO authenticated
 USING (
-  (SELECT has_permission('manage_team'))
+  (SELECT has_permission('team.admin'))
   AND
   number = (SELECT get_team_num())
 );
 
-CREATE POLICY "'manage_team' can DELETE their team"
+CREATE POLICY "'team.admin' can DELETE their team"
   ON teams FOR DELETE TO  authenticated
   USING (
-    (SELECT has_permission('manage_team'))
+    (SELECT has_permission('team.admin'))
     AND
     number = (SELECT get_team_num())
   );
@@ -38,10 +38,10 @@ USING (
   is_user_on_same_team(profiles.user_id)
 );
 
-CREATE POLICY "'manage_team' can SELECT users requesting their team"
+CREATE POLICY "'team.*' can SELECT users requesting their team"
 ON profiles FOR SELECT TO authenticated
 USING (
-  (SELECT has_permission('manage_team'))
+  (SELECT has_permission('team.manage') OR has_permission('team.admin'))
   AND
   EXISTS (
     SELECT 1 FROM team_requests
@@ -72,16 +72,18 @@ USING (
   user_id = (SELECT auth.uid())
 );
 
-CREATE POLICY "'manage_team' can DELETE users from their team"
+CREATE POLICY "'team.*' can DELETE users from their team"
 ON team_users FOR DELETE TO authenticated
 USING (
+  (SELECT has_permission('team.manage') OR has_permission('team.admin'))
+  AND
   team_num = (SELECT get_team_num())
 );
 
-CREATE POLICY "'manage_team' can INSERT users by request"
+CREATE POLICY "'team.*' can INSERT users by request"
 ON team_users FOR INSERT TO authenticated
 WITH CHECK (
-  (SELECT has_permission('manage_team'))
+  (SELECT has_permission('team.manage') OR has_permission('team.admin'))
   AND
   (
     SELECT
@@ -105,18 +107,18 @@ WITH CHECK(
   (SELECT get_team_num() IS NULL)
 );
 
-CREATE POLICY "'manage_team' can SELECT requests"
+CREATE POLICY "'team.*' can SELECT requests"
 ON team_requests FOR SELECT TO authenticated
 USING (
-  (SELECT has_permission('manage_team'))
+  (SELECT has_permission('team.manage') OR has_permission('team.admin'))
   AND
   team_num = (SELECT get_team_num())
 );
 
-CREATE POLICY "'manage_team' can DELETE requests"
+CREATE POLICY "'team.*' can DELETE requests"
 ON team_requests FOR DELETE TO authenticated
 USING (
-  (SELECT has_permission('manage_team'))
+  (SELECT has_permission('team.manage') OR has_permission('team.admin'))
   AND
   team_num = (SELECT get_team_num())
 );
@@ -130,10 +132,10 @@ USING (
   user_id = (SELECT auth.uid())
 );
 
-CREATE POLICY "'manage_team' can SELECT, INSERT, or DELETE permissions"
+CREATE POLICY "'team.*' can SELECT, INSERT, or DELETE permissions"
 ON permissions TO authenticated
 USING (
-  (SELECT has_permission('manage_team'))
+  (SELECT has_permission('team.manage') OR has_permission('team.admin'))
   AND
   team_num = (SELECT get_team_num())
 );

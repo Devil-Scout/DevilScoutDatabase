@@ -9,7 +9,8 @@ CREATE TYPE "permission_type" AS ENUM (
   'scout.match',
   'scout.pit',
   'scout.drive_team',
-  'manage_team'
+  'team.manage',
+  'team.admin'
 );
 
 CREATE TYPE "frc_match_level" AS ENUM (
@@ -172,7 +173,12 @@ CREATE TABLE "frc_match_results" (
   "winning_alliance" frc_alliance,
   "match_key" citext NOT NULL,
   "videos" jsonb[] NOT NULL,
-  "score_breakdown" jsonb,
+  PRIMARY KEY ("match_key")
+);
+
+CREATE TABLE "frc_match_breakdowns" (
+  "match_key" citext NOT NULL,
+  "score_breakdown" jsonb NOT NULL,
   PRIMARY KEY ("match_key")
 );
 
@@ -343,6 +349,8 @@ ALTER TABLE "frc_matches" ADD FOREIGN KEY ("event_key") REFERENCES "frc_events" 
 ALTER TABLE "frc_match_teams" ADD FOREIGN KEY ("match_key") REFERENCES "frc_matches" ("key") ON DELETE CASCADE;
 
 ALTER TABLE "frc_match_results" ADD FOREIGN KEY ("match_key") REFERENCES "frc_matches" ("key") ON DELETE CASCADE;
+
+ALTER TABLE "frc_match_breakdowns" ADD FOREIGN KEY ("match_key") REFERENCES "frc_matches" ("key") ON DELETE CASCADE;
 
 ALTER TABLE "frc_event_rankings" ADD FOREIGN KEY ("event_key") REFERENCES "frc_events" ("key") ON DELETE CASCADE;
 

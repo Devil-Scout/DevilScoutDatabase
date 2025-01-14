@@ -65,7 +65,8 @@ Enum permission_type {
   "scout.match"
   "scout.pit"
   "scout.drive_team"
-  "manage_team"
+  "team.manage"
+  "team.admin"
 }
 
 Table permissions {

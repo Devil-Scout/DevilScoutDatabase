@@ -44,6 +44,17 @@ RETURN (
   )
 );
 
+CREATE FUNCTION auth_delete_user()
+RETURNS VOID
+SECURITY DEFINER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  DELETE FROM auth.users
+    WHERE id = (SELECT auth.uid());
+END;
+$$;
+
 REVOKE EXECUTE ON ALL FUNCTIONS IN SCHEMA public
 FROM
   public,
