@@ -12,6 +12,9 @@ CREATE INDEX ON frc_teams
 CREATE INDEX ON frc_events
   USING GIN(name gin_trgm_ops);
 
+CREATE INDEX ON frc_events
+  USING GIN(key gin_trgm_ops);
+
 -- Speed up data analysis
 
 CREATE INDEX ON submission_data
