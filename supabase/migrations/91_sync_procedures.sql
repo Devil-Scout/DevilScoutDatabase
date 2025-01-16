@@ -227,7 +227,7 @@ BEGIN
       (r.j->>'key') AS match_key,
       (r.j->'score_breakdown') AS score_breakdown
     FROM results r
-    WHERE score_breakdown IS NOT NULL
+    WHERE r.j ? 'score_breakdown'
   )
   MERGE INTO frc_match_breakdowns f
   USING match_breakdowns r ON
