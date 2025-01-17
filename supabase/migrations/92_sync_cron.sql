@@ -81,6 +81,6 @@ SELECT cron.schedule(
   '0 6 * * *',
   $$
   DELETE FROM cron.job_run_details
-  WHERE end_time < now() - INTERVAL '7 days';
+  WHERE end_time < now() - INTERVAL '30 days';
   $$
 );
