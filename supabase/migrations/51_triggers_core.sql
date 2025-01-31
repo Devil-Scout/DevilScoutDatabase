@@ -124,3 +124,31 @@ ALTER TABLE team_users
 ALTER TABLE permissions
   ALTER COLUMN team_num
   SET DEFAULT get_team_num();
+
+CREATE FUNCTION delete_permissions()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  IF (
+    OLD.type = 'team.admin'::permission_type
+  ) AND NOT EXISTS (
+    SELECT 1 FROM permissions
+    WHERE
+      team_num = OLD.team_num AND
+      type = 'team.admin'::permission_type
+  ) AND EXISTS (
+    SELECT 1 FROM teams
+    WHERE number = OLD.team_num
+  ) THEN
+    RAISE EXCEPTION 'Teams must have at least one admin';
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+CREATE CONSTRAINT TRIGGER on_delete
+  AFTER DELETE ON permissions
+  DEFERRABLE
+  FOR EACH ROW EXECUTE PROCEDURE delete_permissions();
