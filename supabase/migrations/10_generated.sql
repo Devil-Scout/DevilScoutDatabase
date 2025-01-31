@@ -50,7 +50,6 @@ CREATE TABLE "teams" (
   "number" smallint NOT NULL,
   "verified" boolean NOT NULL DEFAULT false,
   "created_at" timestamptz NOT NULL DEFAULT (now()),
-  "created_by" uuid DEFAULT (auth.uid()),
   "name" text NOT NULL,
   PRIMARY KEY ("number")
 );
@@ -311,8 +310,6 @@ COMMENT ON TABLE "submissions" IS 'A scouting data submission';
 COMMENT ON TABLE "submission_data" IS 'A submission''s scouting data';
 
 COMMENT ON TABLE "sync"."etags" IS 'A TBA ETag to reduce network traffic';
-
-ALTER TABLE "teams" ADD FOREIGN KEY ("created_by") REFERENCES "profiles" ("user_id") ON DELETE SET NULL;
 
 ALTER TABLE "teams" ADD FOREIGN KEY ("number") REFERENCES "frc_teams" ("number") ON DELETE RESTRICT;
 
