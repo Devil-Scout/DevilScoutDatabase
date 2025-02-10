@@ -1,6 +1,6 @@
 -- Add custom claims to auth jwt, modified from Supabase docs
 -- https://supabase.com/docs/guides/database/postgres/custom-claims-and-role-based-access-control-rbac
-CREATE OR REPLACE FUNCTION public.custom_access_token_hook(event jsonb)
+CREATE FUNCTION public.custom_access_token_hook(event jsonb)
 RETURNS jsonb
 LANGUAGE plpgsql
 STABLE
@@ -18,6 +18,11 @@ BEGIN
 
   IF user_team_num IS NOT NULL THEN
     claims := jsonb_set(claims, '{team_num}', to_jsonb(user_team_num));
+    claims := jsonb_set(claims, '{team_name}', to_jsonb(
+      (
+        SELECT name FROM teams WHERE number = user_team_num
+      )
+    ));
   END IF;
 
   -- permissions

@@ -131,14 +131,14 @@ LANGUAGE plpgsql
 AS $$
 BEGIN
   IF (
-    OLD.type = 'team.admin'::permission_type
+    OLD.type = 'team.admin'::public.permission_type
   ) AND NOT EXISTS (
-    SELECT 1 FROM permissions
+    SELECT 1 FROM public.permissions
     WHERE
       team_num = OLD.team_num AND
-      type = 'team.admin'::permission_type
+      type = 'team.admin'::public.permission_type
   ) AND EXISTS (
-    SELECT 1 FROM teams
+    SELECT 1 FROM public.teams
     WHERE number = OLD.team_num
   ) THEN
     RAISE EXCEPTION 'Teams must have at least one admin';
@@ -147,6 +147,8 @@ BEGIN
   RETURN NEW;
 END;
 $$;
+
+GRANT SELECT ON TABLE teams TO supabase_auth_admin;
 
 CREATE CONSTRAINT TRIGGER on_delete
   AFTER DELETE ON permissions
