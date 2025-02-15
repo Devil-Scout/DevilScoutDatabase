@@ -20,8 +20,8 @@ BEGIN
     claims := jsonb_set(claims, '{team_num}', to_jsonb(user_team_num));
     claims := jsonb_set(claims, '{team_name}', to_jsonb(
       (
-        SELECT name FROM teams WHERE number = user_team_num
-      )
+        SELECT name FROM public.teams t WHERE t.number = user_team_num
+      )::text
     ));
   END IF;
 
@@ -55,6 +55,10 @@ GRANT SELECT
 GRANT SELECT
   ON TABLE public.permissions
   TO supabase_auth_admin;
+
+CREATE POLICY "Supabase Auth can read team names" ON public.teams
+  FOR SELECT TO supabase_auth_admin
+  USING (true);
 
 CREATE POLICY "Supabase Auth can read team numbers" ON public.team_users
   FOR SELECT TO supabase_auth_admin
