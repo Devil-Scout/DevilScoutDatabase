@@ -120,6 +120,42 @@ ALTER TABLE team_users
   ALTER COLUMN team_num
   SET DEfAULT get_team_num();
 
+CREATE FUNCTION insert_team_user()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  DELETE FROM public.team_requests request
+    WHERE request.user_id = NEW.user_id;
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER on_insert
+  AFTER INSERT ON public.team_users
+  FOR EACH ROW EXECUTE PROCEDURE insert_team_user();
+
+-- team_requests
+CREATE FUNCTION insert_request()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM public.team_users
+    WHERE user_id = NEW.user_id
+  ) THEN
+    RAISE EXCEPTION 'Team members cannot request to join a team';
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER on_insert
+  BEFORE INSERT ON public.team_requests
+  FOR EACH ROW EXECUTE PROCEDURE insert_request();
+
 -- permissions
 ALTER TABLE permissions
   ALTER COLUMN team_num
