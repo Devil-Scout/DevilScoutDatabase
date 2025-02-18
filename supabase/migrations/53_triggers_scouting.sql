@@ -25,7 +25,7 @@ CREATE TRIGGER on_insert
   FOR EACH ROW EXECUTE PROCEDURE insert_submissions();
 
 -- submission_data
-CREATE OR REPLACE FUNCTION insert_submission_data()
+CREATE FUNCTION insert_submission_data()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$

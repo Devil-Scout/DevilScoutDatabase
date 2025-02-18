@@ -1,3 +1,6 @@
+ALTER TABLE profiles
+ADD FOREIGN KEY (user_id) REFERENCES auth.users (id) ON DELETE CASCADE;
+
 -- Speed up fuzzy search
 
 CREATE INDEX ON teams

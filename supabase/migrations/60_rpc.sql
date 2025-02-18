@@ -27,7 +27,7 @@ AS $$
     ) DESC, e.key ASC;
 $$;
 
-CREATE OR REPLACE FUNCTION submit_scouting_data(
+CREATE FUNCTION submit_scouting_data(
   category scouting_category,
   key text,
   team_num smallint,
