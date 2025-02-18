@@ -17,6 +17,21 @@ CREATE INDEX ON frc_events
 
 -- Speed up data analysis
 
+-- immutable wrapper
+CREATE FUNCTION jsonb_typeof_i(data jsonb)
+RETURNS data_type
+IMMUTABLE
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  RETURN jsonb_typeof(data)::data_type;
+END;
+$$;
+
+ALTER TABLE public.submission_data
+  ADD COLUMN data_type data_type NOT NULL
+GENERATED ALWAYS AS (jsonb_typeof_i(data)) STORED;
+
 CREATE INDEX ON submission_data
   (question_id, (data::numeric))
   WHERE data_type = 'number'::data_type;
@@ -31,4 +46,4 @@ CREATE INDEX ON submission_data
 
 CREATE INDEX ON submission_data
   USING GIN(question_id, data)
-  WHERE data_type = 'string[]'::data_type;
+  WHERE data_type = 'array'::data_type;

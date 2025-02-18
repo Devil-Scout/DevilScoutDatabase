@@ -5,10 +5,10 @@ Enum scouting_category {
 }
 
 Enum data_type {
-  "boolean"
-  "number"
-  "string"
-  "string[]"
+  boolean
+  number
+  string
+  array
 }
 
 Table questions {
@@ -64,7 +64,6 @@ Ref: submissions.scouting_team > teams.number [delete: set null]
 Table submission_data {
   submission_id uuid [not null]
   question_id uuid [not null]
-  data_type data_type [not null]
   data jsonb [not null]
 
   indexes {
@@ -73,7 +72,7 @@ Table submission_data {
     // (question_id, data::numeric) if number
     // (question_id, data::boolean) if boolean
     // (question_id, data::text) if string
-    // (question_id, data) [gin, default] if string[]
+    // (question_id, data) [gin, default] if array
   }
 
   Note: 'A submission\'s scouting data'

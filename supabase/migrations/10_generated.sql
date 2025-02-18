@@ -36,7 +36,7 @@ CREATE TYPE "data_type" AS ENUM (
   'boolean',
   'number',
   'string',
-  'string[]'
+  'array'
 );
 
 CREATE TABLE "profiles" (
