@@ -1,5 +1,3 @@
-CREATE EXTENSION IF NOT EXISTS pg_net WITH SCHEMA extensions;
-
 CREATE FUNCTION sync.connect()
 RETURNS void
 LANGUAGE sql

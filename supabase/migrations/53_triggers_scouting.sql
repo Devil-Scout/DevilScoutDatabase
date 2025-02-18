@@ -1,9 +1,5 @@
 -- submissions
-ALTER TABLE submissions
-  ALTER COLUMN scouting_team
-  SET DEFAULT get_team_num();
-
-CREATE FUNCTION insert_submissions()
+CREATE FUNCTION check_submission_match_key()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
@@ -18,14 +14,14 @@ BEGIN
 END;
 $$;
 
-REVOKE EXECUTE ON FUNCTION insert_submissions FROM public, anon;
+REVOKE EXECUTE ON FUNCTION check_submission_match_key FROM public, anon;
 
-CREATE TRIGGER on_insert
+CREATE TRIGGER check_match_key
   BEFORE INSERT ON submissions
-  FOR EACH ROW EXECUTE PROCEDURE insert_submissions();
+  FOR EACH ROW EXECUTE PROCEDURE check_submission_match_key();
 
 -- submission_data
-CREATE FUNCTION insert_submission_data()
+CREATE FUNCTION validate_submission_data()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
@@ -91,9 +87,9 @@ BEGIN
 END;
 $$;
 
-REVOKE EXECUTE ON FUNCTION insert_submission_data FROM public, anon;
+REVOKE EXECUTE ON FUNCTION validate_submission_data FROM public, anon;
 
 -- must be after to compute data_type
-CREATE TRIGGER on_insert
-AFTER INSERT ON submission_data
-FOR EACH ROW EXECUTE PROCEDURE insert_submission_data();
+CREATE TRIGGER validate
+  AFTER INSERT ON submission_data
+  FOR EACH ROW EXECUTE PROCEDURE validate_submission_data();

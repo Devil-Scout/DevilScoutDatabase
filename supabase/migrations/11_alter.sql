@@ -1,6 +1,18 @@
 ALTER TABLE profiles
 ADD FOREIGN KEY (user_id) REFERENCES auth.users (id) ON DELETE CASCADE;
 
+ALTER TABLE team_users
+  ALTER COLUMN team_num
+  SET DEfAULT get_team_num();
+
+ALTER TABLE permissions
+  ALTER COLUMN team_num
+  SET DEFAULT get_team_num();
+
+ALTER TABLE submissions
+  ALTER COLUMN scouting_team
+  SET DEFAULT get_team_num();
+
 -- Speed up fuzzy search
 
 CREATE INDEX ON teams

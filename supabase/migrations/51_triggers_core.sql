@@ -6,7 +6,7 @@
 -- This allows null ids (where applicable) by simply omitting them
 
 -- teams
-CREATE FUNCTION insert_team()
+CREATE FUNCTION register_team()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -60,15 +60,15 @@ BEGIN
 END;
 $$;
 
-REVOKE EXECUTE ON FUNCTION insert_team FROM public, anon;
+REVOKE EXECUTE ON FUNCTION register_team FROM public, anon;
 
-CREATE TRIGGER on_insert
+CREATE TRIGGER register
   AFTER INSERT ON teams
-  FOR EACH ROW EXECUTE PROCEDURE insert_team();
+  FOR EACH ROW EXECUTE PROCEDURE register_team();
 
 -- auth.users
 -- profiles table is read-only for clients
-CREATE FUNCTION insert_users()
+CREATE FUNCTION create_user_profile()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
@@ -84,7 +84,7 @@ BEGIN
 END;
 $$;
 
-CREATE FUNCTION update_users()
+CREATE FUNCTION update_user_profile()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
@@ -98,29 +98,19 @@ BEGIN
 END;
 $$;
 
-REVOKE EXECUTE ON FUNCTION insert_users FROM public, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION create_user_profile FROM public, anon, authenticated;
 REVOKE EXECUTE ON FUNCTION update_users FROM public, anon, authenticated;
 
-CREATE TRIGGER
-  on_insert
-AFTER INSERT ON
-  auth.users
-FOR EACH ROW EXECUTE PROCEDURE
-  insert_users();
+CREATE TRIGGER create_profile
+AFTER INSERT ON auth.users
+FOR EACH ROW EXECUTE PROCEDURE create_user_profile();
 
-CREATE TRIGGER
-  on_update
-AFTER UPDATE ON
-  auth.users
-FOR EACH ROW EXECUTE PROCEDURE
-  update_users();
+CREATE TRIGGER update_profile
+AFTER UPDATE ON auth.users
+FOR EACH ROW EXECUTE PROCEDURE update_user_profile();
 
 -- team_users
-ALTER TABLE team_users
-  ALTER COLUMN team_num
-  SET DEfAULT get_team_num();
-
-CREATE FUNCTION insert_team_user()
+CREATE FUNCTION delete_team_request()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
@@ -131,12 +121,12 @@ BEGIN
 END;
 $$;
 
-CREATE TRIGGER on_insert
+CREATE TRIGGER delete_request
   AFTER INSERT ON public.team_users
-  FOR EACH ROW EXECUTE PROCEDURE insert_team_user();
+  FOR EACH ROW EXECUTE PROCEDURE delete_team_request();
 
 -- team_requests
-CREATE FUNCTION insert_request()
+CREATE FUNCTION validate_team_request()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
@@ -152,16 +142,12 @@ BEGIN
 END;
 $$;
 
-CREATE TRIGGER on_insert
+CREATE TRIGGER validate
   BEFORE INSERT ON public.team_requests
-  FOR EACH ROW EXECUTE PROCEDURE insert_request();
+  FOR EACH ROW EXECUTE PROCEDURE validate_team_request();
 
 -- permissions
-ALTER TABLE permissions
-  ALTER COLUMN team_num
-  SET DEFAULT get_team_num();
-
-CREATE FUNCTION delete_permissions()
+CREATE FUNCTION require_admin()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
@@ -186,7 +172,7 @@ $$;
 
 GRANT SELECT ON TABLE teams TO supabase_auth_admin;
 
+-- deferrable for deleting a team
 CREATE CONSTRAINT TRIGGER on_delete
-  AFTER DELETE ON permissions
-  DEFERRABLE
-  FOR EACH ROW EXECUTE PROCEDURE delete_permissions();
+  AFTER DELETE ON permissions DEFERRABLE
+  FOR EACH ROW EXECUTE PROCEDURE require_admin();

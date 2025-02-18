@@ -11,9 +11,6 @@ BEGIN
 END;
 $$;
 
-CREATE TRIGGER
-  modified_at
-BEFORE INSERT OR UPDATE ON
-  sync.etags
-FOR EACH ROW EXECUTE FUNCTION
-  sync.etags_modified_at();
+CREATE TRIGGER modified_at
+BEFORE INSERT OR UPDATE ON sync.etags
+FOR EACH ROW EXECUTE FUNCTION sync.etags_modified_at();
