@@ -1,7 +1,7 @@
 Table profiles {
   user_id uuid [not null]
   created_at timestamptz [not null]
-  name text
+  name text [not null]
 
   indexes {
     user_id [pk]

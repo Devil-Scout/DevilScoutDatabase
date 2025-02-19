@@ -42,7 +42,7 @@ CREATE TYPE "data_type" AS ENUM (
 CREATE TABLE "profiles" (
   "user_id" uuid NOT NULL,
   "created_at" timestamptz NOT NULL,
-  "name" text,
+  "name" text NOT NULL,
   PRIMARY KEY ("user_id")
 );
 
