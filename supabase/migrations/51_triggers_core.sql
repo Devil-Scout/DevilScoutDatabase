@@ -135,7 +135,7 @@ BEGIN
     SELECT 1 FROM public.team_users
     WHERE user_id = NEW.user_id
   ) THEN
-    RAISE EXCEPTION 'Team members cannot request to join a team';
+    RAISE EXCEPTION 'Team member % cannot request to join a team', NEW.user_id;
   END IF;
 
   RETURN NEW;
@@ -163,7 +163,7 @@ BEGIN
     SELECT 1 FROM public.teams
     WHERE number = OLD.team_num
   ) THEN
-    RAISE EXCEPTION 'Teams must have at least one admin';
+    RAISE EXCEPTION 'Team % must have at least one member with team.admin permission', OLD.team_num;
   END IF;
 
   RETURN NEW;
