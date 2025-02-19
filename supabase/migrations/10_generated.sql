@@ -42,7 +42,7 @@ CREATE TYPE "data_type" AS ENUM (
 CREATE TABLE "profiles" (
   "user_id" uuid NOT NULL,
   "created_at" timestamptz NOT NULL,
-  "name" text NOT NULL,
+  "name" text NOT NULL DEFAULT '',
   PRIMARY KEY ("user_id")
 );
 
@@ -215,7 +215,6 @@ CREATE TABLE "submissions" (
 CREATE TABLE "submission_data" (
   "submission_id" uuid NOT NULL,
   "question_id" uuid NOT NULL,
-  "data_type" data_type NOT NULL,
   "data" jsonb NOT NULL,
   PRIMARY KEY ("submission_id", "question_id")
 );
