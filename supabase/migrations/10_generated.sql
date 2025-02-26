@@ -189,12 +189,12 @@ CREATE TABLE "frc_event_rankings" (
 
 CREATE TABLE "questions" (
   "id" uuid NOT NULL DEFAULT (gen_random_uuid()),
-  "category" scouting_category NOT NULL,
   "season" smallint NOT NULL,
-  "index" smallint NOT NULL,
+  "index" smallint NOT NULL DEFAULT 0,
+  "category" scouting_category NOT NULL,
   "parent_id" uuid,
   "data_type" data_type,
-  "prompt" text,
+  "label" text,
   "config" jsonb,
   PRIMARY KEY ("id")
 );

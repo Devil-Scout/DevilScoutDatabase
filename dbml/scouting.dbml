@@ -13,13 +13,13 @@ Enum data_type {
 
 Table questions {
   id uuid [not null, default: `gen_random_uuid()`]
-  category scouting_category [not null]
   season smallint [not null]
-  index smallint
+  index smallint [not null, default: 0]
+  category scouting_category [not null]
   parent_id uuid
 
   data_type data_type
-  prompt text
+  label text
   config jsonb
 
   indexes {

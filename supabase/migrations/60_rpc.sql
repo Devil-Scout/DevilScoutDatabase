@@ -1,3 +1,14 @@
+CREATE FUNCTION auth_delete_user()
+RETURNS VOID
+SECURITY DEFINER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  DELETE FROM auth.users
+    WHERE id = (SELECT auth.uid());
+END;
+$$;
+
 CREATE FUNCTION frc_teams_search(query text)
 RETURNS SETOF smallint
 LANGUAGE sql

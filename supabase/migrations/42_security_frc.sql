@@ -4,10 +4,8 @@ DECLARE
   row RECORD;
 BEGIN
   FOR row IN (
-    SELECT
-      tablename
-    FROM
-      pg_tables AS t
+    SELECT tablename
+    FROM pg_tables AS t
     WHERE t.schemaname = 'public'
     AND t.tablename LIKE 'frc_%'
   )

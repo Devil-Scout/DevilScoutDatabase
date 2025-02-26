@@ -43,11 +43,10 @@ ON profiles FOR SELECT TO authenticated
 USING (
   (SELECT has_permission('team.manage') OR has_permission('team.admin'))
   AND
-  EXISTS (
-    SELECT 1 FROM team_requests
-      WHERE
-        team_requests.user_id = profiles.user_id AND
-        team_requests.team_num = (SELECT get_team_num())
+  profiles.user_id IN (
+    SELECT user_id
+      FROM team_requests
+      WHERE team_num = (SELECT get_team_num())
   )
 );
 
@@ -85,13 +84,11 @@ ON team_users FOR INSERT TO authenticated
 WITH CHECK (
   (SELECT has_permission('team.manage') OR has_permission('team.admin'))
   AND
-  (
-    SELECT
-      team_requests.team_num
-    FROM
-      team_requests
-    WHERE team_requests.user_id = team_users.user_id
-  ) = (SELECT get_team_num())
+  (SELECT get_team_num()) = (
+    SELECT team_requests.team_num
+      FROM team_requests
+      WHERE team_requests.user_id = team_users.user_id
+  )
 );
 
 -- team_requests -----------------------

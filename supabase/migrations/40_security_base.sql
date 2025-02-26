@@ -3,13 +3,10 @@ RETURNS boolean STRICT
 STABLE
 SECURITY DEFINER
 LANGUAGE sql
-RETURN EXISTS (
-  SELECT 1
-  FROM
-    permissions
-  WHERE
-    user_id = (SELECT auth.uid()) AND
-    type = p_type
+RETURN p_type IN (
+  SELECT type
+    FROM permissions
+    WHERE user_id = (SELECT auth.uid())
 );
 
 CREATE FUNCTION get_team_num()
@@ -18,15 +15,9 @@ STABLE
 SECURITY DEFINER
 LANGUAGE sql
 RETURN (
-  SELECT
-    team_num
-  FROM
-    team_users
-  WHERE
-    user_id = (
-      SELECT
-        auth.uid ()
-    )
+  SELECT team_num
+    FROM team_users
+    WHERE user_id = (SELECT auth.uid())
 );
 
 CREATE FUNCTION is_user_on_same_team(id_user uuid)
@@ -34,31 +25,14 @@ RETURNS boolean STRICT
 STABLE
 SECURITY DEFINER
 LANGUAGE sql
-RETURN (
-  EXISTS (
-    SELECT 1
-      FROM team_users
-      WHERE
-        team_users.user_id = id_user AND
-        team_users.team_num = (SELECT get_team_num())
-  )
+RETURN SELECT (SELECT get_team_num()) = (
+  SELECT team_num
+    FROM team_users
+    WHERE team_users.user_id = id_user
 );
 
-CREATE FUNCTION auth_delete_user()
-RETURNS VOID
-SECURITY DEFINER
-LANGUAGE plpgsql
-AS $$
-BEGIN
-  DELETE FROM auth.users
-    WHERE id = (SELECT auth.uid());
-END;
-$$;
-
 REVOKE EXECUTE ON ALL FUNCTIONS IN SCHEMA public
-FROM
-  public,
-  anon;
+FROM public, anon;
 
 -- Restrict every public table by default
 DO $$
@@ -66,11 +40,9 @@ DECLARE
   row RECORD;
 BEGIN
   FOR row IN (
-    SELECT
-      tablename
-    FROM
-      pg_tables AS t
-    WHERE t.schemaname = 'public'
+    SELECT tablename
+      FROM pg_tables AS t
+      WHERE t.schemaname = 'public'
   )
   LOOP
     EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY;', row.tablename);
@@ -79,7 +51,4 @@ END;
 $$;
 
 REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA public
-FROM
-  public,
-  anon,
-  authenticated;
+FROM public, anon, authenticated;
