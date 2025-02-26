@@ -191,7 +191,7 @@ CREATE TABLE "questions" (
   "id" uuid NOT NULL DEFAULT (gen_random_uuid()),
   "category" scouting_category NOT NULL,
   "season" smallint NOT NULL,
-  "index" smallint,
+  "index" smallint NOT NULL,
   "parent_id" uuid,
   "data_type" data_type,
   "prompt" text,
