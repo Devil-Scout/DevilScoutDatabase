@@ -64,15 +64,18 @@ Ref: submissions.scouting_team > teams.number [delete: set null]
 Table submission_data {
   submission_id uuid [not null]
   question_id uuid [not null]
-  data jsonb [not null]
+  data_num numeric
+  data_bool boolean
+  data_str text
+  data_arr text[]
 
   indexes {
     (submission_id, question_id) [pk]
     // conditional indexes based on data type:
-    // (question_id, data::numeric) if number
-    // (question_id, data::boolean) if boolean
-    // (question_id, data::text) if string
-    // (question_id, data) [gin, default] if array
+    // (question_id, data_num)
+    // (question_id, data_bool)
+    // (question_id, data_str)
+    // (question_id, data_arr) [gin, default]
   }
 
   Note: 'A submission\'s scouting data'

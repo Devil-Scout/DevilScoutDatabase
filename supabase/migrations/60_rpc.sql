@@ -47,15 +47,19 @@ CREATE FUNCTION submit_scouting_data(
 RETURNS void
 LANGUAGE plpgsql
 AS $$
+#variable_conflict use_variable
 DECLARE
   submission_id uuid;
+  year smallint;
 BEGIN
+  year := substring(key FROM 0 FOR 5)::smallint;
+
   -- Create the submission
   IF category = 'pit'::scouting_category THEN
     WITH submission AS (
       INSERT INTO submissions
         (category, season, scouted_team, event_key) VALUES
-        (category, substring(key FROM 0 FOR 5)::smallint, team_num, key)
+        (category, year, team_num, key)
         RETURNING id
     )
     SELECT INTO submission_id submission.id FROM submission;
@@ -63,18 +67,62 @@ BEGIN
     WITH submission AS (
       INSERT INTO submissions
         (category, season, scouted_team, event_key, match_key) VALUES
-        (category, substring(key FROM 0 FOR 5)::smallint, team_num, substring(key FROM '^(\w+)_'), key)
+        (category, year, team_num, substring(key FROM '^(\w+)_'), key)
         RETURNING id
     )
     SELECT INTO submission_id submission.id FROM submission;
   END IF;
 
-  WITH map AS (
-    SELECT j.key, j.value
-    FROM json_each(data) AS j(key, value)
+  -- numbers
+  WITH qs AS (
+    SELECT q.id
+    FROM questions q
+    WHERE
+      q.season = year AND
+      q.category = category AND
+      q.data_type = 'number'::data_type
   )
-  INSERT INTO submission_data (submission_id, question_id, data)
-    SELECT submission_id, map.key::uuid, map.value::jsonb
-    FROM map;
+  INSERT INTO submission_data (submission_id, question_id, data_num)
+    SELECT submission_id, q.id, (data->>(q.id::text))::numeric
+    FROM qs q;
+
+  -- booleans
+  WITH qs AS (
+    SELECT q.id
+    FROM questions q
+    WHERE
+      q.season = year AND
+      q.category = category AND
+      q.data_type = 'boolean'::data_type
+  )
+  INSERT INTO submission_data (submission_id, question_id, data_bool)
+    SELECT submission_id, q.id, (data->>(q.id::text))::boolean
+    FROM qs q;
+
+  -- strings
+  WITH qs AS (
+    SELECT q.id
+    FROM questions q
+    WHERE
+      q.season = year AND
+      q.category = category AND
+      q.data_type = 'string'
+  )
+  INSERT INTO submission_data (submission_id, question_id, data_str)
+    SELECT submission_id, q.id, (data->>(q.id::text))
+    FROM qs q;
+
+  -- arrays
+  WITH qs AS (
+    SELECT q.id
+    FROM questions q
+    WHERE
+      q.season = year AND
+      q.category = category AND
+      q.data_type = 'array'
+  )
+  INSERT INTO submission_data (submission_id, question_id, data_arr)
+    SELECT submission_id, q.id, json_to_array(data->(q.id::text))
+    FROM qs q;
 END;
 $$;
