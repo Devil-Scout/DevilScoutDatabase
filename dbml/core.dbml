@@ -1,13 +1,11 @@
-Table profiles {
-  user_id uuid [not null]
+Table users {
+  id uuid [not null]
   created_at timestamptz [not null]
-  name text [not null, default: '']
+  name text [not null]
 
   indexes {
-    user_id [pk]
+    id [pk]
   }
-
-  Note: 'A user of the platform'
 }
 
 Table teams {
@@ -15,16 +13,16 @@ Table teams {
   verified boolean [not null, default: false]
   created_at timestamptz [not null, default: `now()`]
   name text [not null]
+  current_event citext
 
   indexes {
     number [pk]
     // number::text (gin, pg_trgm)
     // name (gin, pg_trgm)
   }
-
-  Note: 'A team utilizing the platform'
 }
 Ref: teams.number > frc_teams.number [delete: restrict]
+Ref: teams.current_event > frc_events.key [delete: set null]
 
 Table team_users {
   user_id uuid [not null]
@@ -38,12 +36,10 @@ Table team_users {
     (team_num, added_at)
     added_by
   }
-
-  Note: 'A user\'s association with a team'
 }
-Ref: team_users.user_id > profiles.user_id [delete: cascade]
+Ref: team_users.user_id > users.id [delete: cascade]
 Ref: team_users.team_num > teams.number [delete: cascade]
-Ref: team_users.added_by > profiles.user_id [delete: set null]
+Ref: team_users.added_by > users.id [delete: set null]
 
 Table team_requests {
   user_id uuid [not null, default: `auth.uid()`]
@@ -54,18 +50,14 @@ Table team_requests {
     user_id [pk]
     (team_num, requested_at)
   }
-
-  Note: 'A user\'s request to join a team'
 }
-Ref: team_requests.user_id > profiles.user_id [delete: cascade]
+Ref: team_requests.user_id > users.id [delete: cascade]
 Ref: team_requests.team_num > teams.number [delete: cascade]
 
-Enum permission_type {
-  "scout.match"
-  "scout.pit"
-  "scout.drive_team"
-  "team.manage"
-  "team.admin"
+Table permission_types {
+  id citext [not null]
+  name text [not null]
+  description text [not null, default: '']
 }
 
 Table permissions {
@@ -73,7 +65,7 @@ Table permissions {
   team_num smallint [not null] // default: get_team_num()
   granted_at timestamptz [not null, default: `now()`]
   granted_by uuid [default: `auth.uid()`]
-  type permission_type [not null]
+  type citext [not null]
 
   indexes {
     (user_id, type) [pk]
@@ -81,8 +73,7 @@ Table permissions {
     (team_num, user_id) // for fk
     (team_num, granted_by) // for fk
   }
-
-  Note: 'A user\'s permission'
 }
 Ref: permissions.(team_num, user_id) > team_users.(team_num, user_id) [delete: cascade]
 Ref: permissions.(team_num, granted_by) > team_users.(team_num, user_id) [delete: cascade]
+Ref: permissions.type > permission_types.id [delete: restrict]

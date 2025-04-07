@@ -1,16 +1,3 @@
-// Hidden from clients
-Table sync.etags {
-  modified_at timestamptz [not null]
-  key text [not null]
-  value text [not null]
-
-  indexes {
-    key [pk] // patch: include value
-  }
-
-  Note: 'A TBA ETag to reduce network traffic'
-}
-
 // Manually populated
 Table frc_seasons {
   year smallint [not null]
@@ -19,8 +6,6 @@ Table frc_seasons {
   indexes {
     year [pk]
   }
-
-  Note: 'A competition season with a unique game'
 }
 
 Table frc_districts {
@@ -33,67 +18,8 @@ Table frc_districts {
     key [pk]
     (season, code) [unique]
   }
-
-  Note: 'A district designation for a particular season'
 }
 Ref: frc_districts.season > frc_seasons.year [delete: cascade]
-
-// Manually populated
-Table frc_event_types {
-  id smallint [not null]
-  is_district boolean [not null]
-  is_championship boolean [not null]
-  is_division boolean [not null]
-  is_offseason boolean [not null]
-  name text [not null]
-  name_short text [not null]
-
-  indexes {
-    id [pk]
-  }
-
-  Note: 'A type of competition event'
-}
-
-Table frc_events {
-  season smallint [not null]
-  type smallint [not null]
-  start_date date [not null]
-  end_date date [not null]
-  coordinates point
-  week smallint
-
-  key citext [not null]
-  code citext [not null]
-  name text [not null]
-  name_short text
-  district_key citext
-
-  timezone text
-  country text
-  province text
-  city text
-  address text
-  location text
-
-  website text
-  postal_code citext
-
-  indexes {
-    key [pk]
-    (season, code) [unique]
-    (type, season)
-    (start_date, end_date)
-    district_key // for fk
-    // key (gin, pg_trgm)
-    // name (gin, pg_trgm)
-  }
-
-  Note: 'An event or competition'
-}
-Ref: frc_events.season > frc_seasons.year [delete: cascade]
-Ref: frc_events.type > frc_event_types.id [delete: restrict]
-Ref: frc_events.district_key > frc_districts.key [delete: set null]
 
 Table frc_teams {
   number smallint [not null]
@@ -111,110 +37,5 @@ Table frc_teams {
     // name (gin, pg_trgm)
     // (number::text) (gin, pg_trgm)
   }
-
-  Note: 'A team competing in a particular season'
 }
 Ref: frc_teams.rookie_season > frc_seasons.year [delete: restrict]
-
-Table frc_event_teams {
-  team_num smallint [not null]
-  event_key citext [not null]
-
-  indexes {
-    (event_key, team_num) [pk]
-    (team_num, event_key) [unique] // filter by season using LIKE
-  }
-
-  Note: 'A team competing in an event'
-}
-Ref: frc_event_teams.event_key > frc_events.key [delete: cascade]
-Ref: frc_event_teams.team_num > frc_teams.number [delete: cascade]
-
-Enum frc_match_level {
-  qm
-  ef
-  qf
-  sf
-  f
-}
-
-Table frc_matches {
-  number smallint [not null]
-  set smallint [not null]
-  level frc_match_level [not null]
-  event_key citext [not null]
-  key citext [not null]
-
-  scheduled_time timestamptz // 25%
-  predicted_time timestamptz // 50%
-  actual_time timestamptz // 50%
-
-  indexes {
-    key [pk]
-    (event_key, level, set, number) [unique]
-  }
-
-  Note: 'A match at an event'
-}
-Ref: frc_matches.event_key > frc_events.key [delete: cascade]
-
-Enum frc_alliance {
-  red
-  blue
-}
-
-Table frc_match_teams {
-  team_num smallint [not null]
-  station smallint [not null]
-  alliance frc_alliance [not null]
-  is_surrogate boolean [not null]
-  is_disqualified boolean [not null]
-  match_key citext [not null]
-
-  indexes {
-    (match_key, alliance, station) [pk]
-    (team_num, match_key)
-  }
-
-  Note: 'A team competing in a match'
-}
-Ref: frc_match_teams.match_key > frc_matches.key [delete: cascade]
-// no fk for team_num
-
-Table frc_match_results {
-  red_score smallint [not null]
-  blue_score smallint [not null]
-  winning_alliance frc_alliance
-  match_key citext [not null]
-  videos jsonb[] [not null]
-
-  indexes {
-    match_key [pk]
-  }
-
-  Note: 'An official match result from the FMS'
-}
-Ref: frc_match_results.match_key > frc_matches.key [delete: cascade]
-
-Table frc_match_breakdowns {
-  match_key citext [not null]
-  score_breakdown jsonb [not null]
-
-  indexes {
-    match_key [pk]
-  }
-}
-Ref: frc_match_breakdowns.match_key > frc_matches.key [delete: cascade]
-
-Table frc_event_rankings {
-  team_num smallint [not null]
-  rank smallint [not null]
-  event_key citext [not null]
-
-  indexes {
-    (event_key, rank) // not unique (ties)
-    (team_num, event_key)
-  }
-}
-Ref: frc_event_rankings.event_key > frc_events.key [delete: cascade]
-// no fk for team num
